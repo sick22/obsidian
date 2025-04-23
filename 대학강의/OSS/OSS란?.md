@@ -15,14 +15,69 @@
 	CCTV, 셋톱박스 같은 예시, 기기값을 지불하면 부가적으로 따라옴
 
 
-###### OSS 개발 모델 
+**정부가 OSS를 사용하고 창조해야 하는가?**
+- 상세하게 평가 가능, 위험 줄일 수 있음
+	보안등의 요구상에 맞는지 확인 가능
+	대규모의 개별 리뷰를 통해 품질과 보안을 향상시킬 수 있음
+	기록물의 지속성을 보존하고, 정부 정책의 투명성 보장
+- 아무런 대가 없이 반복적으로 복사가능
+	지원에 대해서는 개별적으로 부담
+- 다른 사용자와 함께 개발 비용을 공유
+- 특정한 요구에 대해 수정하거나 반례를 확인
+- 특정 소수집단에 대한 욕망을 제재
+	Vendor lock-in으로부터 해방
+
+Digital.gov / Data.go.kr
+
+##### Open Source software 개발 시작하기
+**기초작업**
+	시용자를 모으는 것, 개발자를 모으는 것
+	Principle of Scaled presentations
+
+**OSS 개발 모델**
 1. 개발 진행
 2. 유저에게 버그리포트(아이디어) 
 3. 유저를 개발자로 (User as developer)
 
 개발 PT시 단점 or 개발불가가 아닌 개발 예정이라고 표현
 
+###### 보유한 역량과 함께 시작하기
+**좋은 이름 선택하기**
+- 프로젝트가 무엇을 하는 지에 대한 약간의 아이디어를 제공
+- 기억하기 쉬워야함
+- 이름은 pun하게
+- 다른 프로젝트 이름과 동일한지, 혹은 상표를 위반하지 않는지?
+	www.usp-to.gov
+	www.kipris.or.kr
+- 도메인 네임 검색
+- 소셜 계정 및 마이크로블로그 계정
+- 중요한 네임스페이스를 소유하는 것
+- 찾기 쉽다. 따라서, contribute할 것이 많고 다양하다.
+**명확한 Mission Statement 선정하기**
+- Quick descriprion 혹은 Mission statement
+- 5문장 이하로 구성
+	- 적절한 수준의 기술적인 준비사항
+	- 최소한의 정보를 포함
+	- Cluster, high-availability
+**프로젝트가 Free임을 언급하기**
+- 첫 페이지는 무조건 open-source키워드를 넣을 것 
+**다운로드** 
+- LTS - long term support
+- PGP - pretty good privacy
+**버전 관리와 버그트래커**
+VCS - version control system ex) github bitbucket
+
+**문서화**
+- 편집하기 쉽고 간단히
+- FAQ - Frequently Asked Questions 
+	예상이 불가능 하기에 부담 집착 ㄴㄴ, 적은 수의 질문, 편리성에 중심
+**데모, 스크린샷, 비디오와 예제 출력**
+	비디오는 4분 아래로
+	watch out video no, watch our 3minutes video
+
+
 ###### 라이선스
+GPL - general public license
 **Copyright**
 	사용자가 정한 범위내, 버그 책임 제작자, 재라이선싱 및 상업적 사용 여부 제작자가 결정
 **Copyleft**
