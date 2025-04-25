@@ -20,7 +20,7 @@ window, office, oracle / apache, linux, php
 API - application programming interface
 
 마크다운 
-gitub, jupyther notebook, oclab
+gitub, jupyther notebook, colab
 #h 
 
 > fdfd
