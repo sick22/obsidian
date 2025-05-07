@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "AI SW 전문가 튜토리얼/2차.md",
+                "file": "Calendar/Daily/2025-05-07.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "2차"
+              "title": "2025-05-07"
             }
           }
         ]
@@ -190,10 +190,11 @@
       "periodic-notes:Open today": false
     }
   },
-  "active": "274cfd5e0c0e8e16",
+  "active": "dac1545506f8b0ad",
   "lastOpenFiles": [
-    "대학강의/OSS/Github.md",
     "AI SW 전문가 튜토리얼/2차.md",
+    "Calendar/Daily/2025-05-07.md",
+    "대학강의/OSS/Github.md",
     "AI SW 전문가 튜토리얼/1차.md",
     "대학강의/객체지향/CPP.md",
     "대학강의/문제해결프로그래밍/강의 내용.md",
@@ -224,7 +225,6 @@
     "C++/String.md",
     "대학강의/OSS",
     "대학강의/컴퓨터구조",
-    "Unity/Animation.md",
     "Unity/무제",
     "Unity",
     "대학강의",
