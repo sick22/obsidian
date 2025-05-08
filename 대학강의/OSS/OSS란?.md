@@ -146,9 +146,19 @@ GPL - general public license
 **버전 컨트롤**
 - pull, commit message, clone, diff 잘 알아둘 것
 ###### VSC 사용하기
-- Version everything
-	코드가 아니더라도 버전화 시키자
-- Browsability
-- USe Branches to Avoid Bottlenecks
-- Singularity of Information
-- Authorization
+- **Version everything**
+	- 코드가 아니더라도 버전화 시키자
+	- generated files는 versioning을 하면 안됨(환경에 따라 다른 파일들)
+- **Browsability**
+- **USe Branches to Avoid Bottlenecks**
+- **Singularity of Information**
+- **Authorization**
+	- 개발자의 활동 영역을 설정하는 것
+		Commit Access를 부여 받으면 담당자가 되는 것
+	- Area 기반 권한 부여 방법의 장점
+	- 기술적인 강압에 의한 권한 제어에 많은 시간을 투자하지 말것
+###### 버그 트래킹
+- 버그 트래킹의 정의
+- 버그 트래커는 다양하게 불리움
+	- Issue , ticket, defect, artifact, request
+- Ticket은 tracker 데이터베이스 내 아이템을 지칭
