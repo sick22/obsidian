@@ -86,3 +86,54 @@ cout.unsetf(ios::fixed)
 
 
 
+##### Class
+캡슐화
+```cpp
+class Circle{
+ private:
+  double radius;
+ public:
+  double getRadius() const; //함수 원형이다. const는 멤버 함수를 변경하지 않음 
+  double getArea() const;
+  double getPerimeter() const;
+  void setRadius(double value);
+  ```
+  멤버 함수 정의
+```cpp
+ double Circle::getRadius() const { //Circle:: 을 통해 멤버함수를 정의
+  return radius; // radius가 private이지만 class 안이기에 접근 가능하다
+  }
+ double Circle::getArea() const {
+  const double PI = 3.141592; 
+  return (PI * radius * radius);
+  }
+ double Circle::getPerimeter() const {
+  const double PI = 3.141592; 
+  return (2 * PI * radius);
+  }
+ void Circle::setRadius(double value) {
+  radius = value;
+  }
+};
+```
+애플리케이션 부분(클래스를 인스턴트화 -> 객체를 만듦)
+```cpp
+int main()
+{
+    cout << "Circle 1" << endl;
+    Circle circle1;
+    circle1.setRadius(10.0);
+    cout << "반지름: " << circle1.getRadius() << endl;
+    cout << "넓이: " << circle1.getArea() << endl;
+    cout << "둘레: " << circle1.getPerimeter() << endl;
+
+    cout << "Circle 2" << endl;
+    Circle circle2;
+    circle2.setRadius(20.0);
+    cout << "반지름: " << circle2.getRadius() << endl;
+    cout << "넓이: " << circle2.getArea() << endl;
+    cout << "둘레: " << circle2.getPerimeter();
+
+    return 0;
+}
+```
