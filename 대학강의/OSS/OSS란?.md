@@ -3,7 +3,7 @@
 -(ppt 2장~3장)
 
 
-**Open source software**
+##### Open source software
 	- 유사어 : libre sofrware, free software, FOSS, FLOSS
 	- 반대어: Proprietary software, closed software
 
@@ -129,7 +129,7 @@ GPL - general public license
 커뮤니케이션 네트워크의 지수적인 특징 $C = n(n-1)/2$
 
 
-###### 기술적인 인프라구조
+##### 기술적인 인프라구조
 
 오픈소스는 **협력 기술**에 중심
 - 디지털 표현 의도, 선택적 캡쳐 지원 도구
@@ -143,3 +143,12 @@ GPL - general public license
 - 저장과 반환에서 반복 최소화
 - 오류나 오래된 정보 정정
 - 분리된 정보를 연관
+**버전 컨트롤**
+- pull, commit message, clone, diff 잘 알아둘 것
+###### VSC 사용하기
+- Version everything
+	코드가 아니더라도 버전화 시키자
+- Browsability
+- USe Branches to Avoid Bottlenecks
+- Singularity of Information
+- Authorization
