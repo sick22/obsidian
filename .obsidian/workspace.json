@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "대학강의/객체지향/CPP.md",
+                "file": "대학강의/컴퓨터구조/컴퓨터 구조.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "CPP"
+              "title": "컴퓨터 구조"
             }
           }
         ]
@@ -53,7 +53,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "tag:#퀴즈",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -74,8 +74,7 @@
               "title": "북마크"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
@@ -193,12 +192,15 @@
   },
   "active": "da786429fa37cead",
   "lastOpenFiles": [
-    "대학강의/OSS/OSS란?.md",
-    "대학강의/객체지향/CPP.md",
-    "Calendar/Daily/2025-05-07.md",
-    "대학강의/컴퓨터구조/컴퓨터 구조.md",
-    "대학강의/OSS/Github.md",
     "확통.md",
+    "무제.canvas",
+    "2025-05-12.md",
+    "대학강의/컴퓨터구조/컴퓨터 구조.md",
+    "Calendar/Daily/2025-05-12.md",
+    "대학강의/객체지향/CPP.md",
+    "대학강의/OSS/OSS란?.md",
+    "Calendar/Daily/2025-05-07.md",
+    "대학강의/OSS/Github.md",
     "AI SW 전문가 튜토리얼/2차.md",
     "AI SW 전문가 튜토리얼/1차.md",
     "대학강의/문제해결프로그래밍/강의 내용.md",
@@ -221,15 +223,11 @@
     "대학강의/객체지향",
     "Pasted image 20250313104200.png",
     "Unity/Monobehaviur.md",
-    "C++/begin.md",
-    "C++/조건문.md",
-    "C++/String.md",
     "대학강의/OSS",
     "대학강의/컴퓨터구조",
     "Unity/무제",
     "Unity",
     "대학강의",
-    "대학강의/데이터구조",
-    "무제.canvas"
+    "대학강의/데이터구조"
   ]
 }
