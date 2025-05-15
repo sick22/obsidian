@@ -152,6 +152,39 @@ int main()
 
 (= 변수를 기본값으로 세팅하거나, 메모리를 연결하거나)
 
+
+```cpp
+class Circle
+{
+    ...
+public:
+    Circle(double radius);         // Parameter Constructor
+    Circle();                      // Default Constructor
+    Circle(const Circle& circle);  // Copy Constructor
+    ...
+};
+```
+생성자 오버로딩
+```cpp
+Circle::Circle(double rds)
+    : radius(rds) // Initialization list
+{
+    // Any other statements
+}
+
+Circle::Circle() // 기본 생성자 (정해진 값으로 초기화)
+    : radius(0.0) // Initialization list
+{
+    // Any other statements
+}
+
+Circle::Circle(const Circle& cr) //복사 생성자
+    : radius(cr.radius) // Initialization list
+{
+    // Any other statements
+}
+```
+
 # **🛠 소멸자 (Destructor)**
 
 **정의:**
@@ -171,8 +204,68 @@ int main()
 | 역할     | 객체 **초기화**        | 객체 **정리(리소스 해제)** |
 | 직접 호출? | 직접 호출 안 함         | 직접 호출 안 함         |
 | 리턴 타입  | 없음                | 없음                |
+
+```cpp
+class Circle
+{
+    ...
+public:
+    ...
+    ~Circle();  // Destructor
+};
+
+...
+
+Circle::~Circle()
+{
+    // Any statements as needed
+}
+```
+
+
+
+```cpp
+/* 멤버 함수 정의 (생성자, 소멸자) */
+Circle::Circle(double rds) : radius(rds)
+{
+    cout << "파라미터 생성자가 호출되었습니다." << endl;
+    assert(rds >= 0); // 디버깅 용도. false이면 프로그램 종료
+}
+
+Circle::Circle() : radius(0.0)
+{
+    cout << "기본 생성자가 호출되었습니다." << endl;
+}
+
+Circle::Circle(const Circle& circle) : radius(circle.radius)
+{
+    cout << "복사 생성자가 호출되었습니다." << endl;
+}
+
+Circle::~Circle()
+{
+    cout << "소멸자가 호출되었습니다." << endl;
+}
+```
 ###### 7장 #퀴즈
 
+1번
+	메모리에 할당 되는 순간
+2번
+	 3번 (오버로딩 가능하다.)
+3번
+	`~Class`
+4번
+	1. 같은 이름의 함수를 파라매터의 개수에 따라 다르게 호출하여 사용
+	2번 소멸자는 오버로딩이 불가능하다
+6번
+	Constructor
+	Constructor
+	Destructor
+	End
+	Destructor (구역을 정해주지 않는다면 소멸자는 return에서 작동한다.)
+7번
+	CCDD
 10번
 1. O
 2. X (컴파일러가 판단하여)
