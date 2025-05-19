@@ -162,3 +162,11 @@ GPL - general public license
 - 버그 트래커는 다양하게 불리움
 	- Issue , ticket, defect, artifact, request
 - Ticket은 tracker 데이터베이스 내 아이템을 지칭
+
+##### pytest
+pyTest에서 fail은 무조건 하나 (fail 시에 아래의 명령 실행하지 않음)
+
+test_ or  \_test 형식의 파일만 실행할 수 있음
+
+옵션1 시험 X 
+**Marker에 의한 테스트 그룹** 중요!
