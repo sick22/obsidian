@@ -273,11 +273,11 @@ Circle::~Circle()
 | 6   | Constructor → Constructor → Destructor → End → Destructor<br>(※ 구역을 정해주지 않으면 소멸자는 `return` 시 작동함)       |
 | 7   | CCDD                                                                                                    |
 | 10  | 1. O<br>2. X (컴파일러가 판단하여)<br>3. X<br>4. O                                                               |
-| 11  |                                                                                                         |
+| 11  | 짧은 함수를 여러번 호출해야할 때                                                                                      |
 | 12  |                                                                                                         |
 | 13  |                                                                                                         |
 | 14  |                                                                                                         |
-| 15  |                                                                                                         |
+| 15  | - 생성자는 this가 있어야 하는데<br>    <br>- static 함수에는 this가 없으므로<br>    <br>- static 생성자는 존재할 수 없음 → **컴파일 에러** |
 | 16  | 불가능<br>`static → static` ✅<br>`instance → instance` ✅<br>`static → instance` ❌<br>`instance → static` ✅ |
 | 17  | a (static) → 1회<br>b (instance) → 호출하는 만큼                                                               |
 | 18  | static 변수 초기화: `int Example::val = 7;`                                                                  |
