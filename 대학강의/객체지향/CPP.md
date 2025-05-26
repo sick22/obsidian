@@ -264,26 +264,30 @@ Circle::~Circle()
 | `#endif`  | end if         | 조건부 전처리 블록의 **끝을 나타냄**               |
 
 ###### 7장 #퀴즈
-| 번호  | 정답 또는 설명                                                                                                |
-| --- | ------------------------------------------------------------------------------------------------------- |
-| 1   | 메모리에 할당되는 순간                                                                                            |
-| 2   | 3번 (오버로딩 가능하다)                                                                                          |
-| 3   | `~Class`                                                                                                |
-| 4   | 1. 같은 이름의 함수를 파라미터의 개수에 따라 다르게 호출하여 사용<br>2. 소멸자는 오버로딩이 불가능하다                                           |
-| 6   | Constructor → Constructor → Destructor → End → Destructor<br>(※ 구역을 정해주지 않으면 소멸자는 `return` 시 작동함)       |
-| 7   | CCDD                                                                                                    |
-| 10  | 1. O<br>2. X (컴파일러가 판단하여)<br>3. X<br>4. O                                                               |
-| 11  | 짧은 함수를 여러번 호출해야할 때                                                                                      |
-| 12  |                                                                                                         |
-| 13  |                                                                                                         |
-| 14  |                                                                                                         |
-| 15  | - 생성자는 this가 있어야 하는데<br>    <br>- static 함수에는 this가 없으므로<br>    <br>- static 생성자는 존재할 수 없음 → **컴파일 에러** |
-| 16  | 불가능<br>`static → static` ✅<br>`instance → instance` ✅<br>`static → instance` ❌<br>`instance → static` ✅ |
-| 17  | a (static) → 1회<br>b (instance) → 호출하는 만큼                                                               |
-| 18  | static 변수 초기화: `int Example::val = 7;`                                                                  |
-| 19  | 3                                                                                                       |
-| 20  | a                                                                                                       |
-| 21  | [7-21](file:///Users/jeong-yongseog/cpp/시험공부/7장/circle/7-21.cpp)                                        |
-| 22  | public(생성자 앞에, 생성자 사용을 위해),  static int getCount(Counter::get때문에),                                      |
-| 23  |                                                                                                         |
-|     |                                                                                                         |
+| 번호  | 정답 또는 설명                                                                                                     |
+| --- | ------------------------------------------------------------------------------------------------------------ |
+| 1   | 메모리에 할당되는 순간                                                                                                 |
+| 2   | 3번 (오버로딩 가능하다)                                                                                               |
+| 3   | `~Class`                                                                                                     |
+| 4   | 1. 같은 이름의 함수를 파라미터의 개수에 따라 다르게 호출하여 사용<br>2. 소멸자는 오버로딩이 불가능하다                                                |
+| 6   | Constructor → Constructor → Destructor → End → Destructor<br>(※ 구역을 정해주지 않으면 소멸자는 `return` 시 작동함)            |
+| 7   | CCDD                                                                                                         |
+| 10  | 1. O<br>2. X (컴파일러가 판단하여)<br>3. X<br>4. O                                                                    |
+| 11  | 짧은 함수를 여러번 호출해야할 때                                                                                           |
+| 12  |                                                                                                              |
+| 13  |                                                                                                              |
+| 14  |                                                                                                              |
+| 15  | - 생성자는 this가 있어야 하는데<br>    <br>- static 함수에는 this가 없으므로<br>    <br>- static 생성자는 존재할 수 없음 → **컴파일 에러**      |
+| 16  | 불가능<br>`static → static` ✅<br>`instance → instance` ✅<br>`static → instance` ❌<br>`instance → static` ✅      |
+| 17  | a (static) → 1회<br>b (instance) → 호출하는 만큼                                                                    |
+| 18  | static 변수 초기화: `int Example::val = 7;`                                                                       |
+| 19  | 3                                                                                                            |
+| 20  | a                                                                                                            |
+| 21  | [7-21](file:///Users/jeong-yongseog/cpp/시험공부/7장/7-21.cpp)                                                    |
+| 22  | public(생성자 앞에, 생성자 사용을 위해),  <br>static int getCount(Counter::get때문에), <br>int Counter::count = 0; 으로 선언해줘야함 |
+| 23  | 공유를 쉽게 하기 위해서, <br>컴파일 수를 줄일 수 있음                                                                            |
+| 24  | 7-24 폴더                                                                                                      |
+
+
+###### 8장 퀴즈
+[8-1](file:///Users/jeong-yongseog/cpp/시험공부/8장/8-1.cpp)
