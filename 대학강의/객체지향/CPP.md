@@ -283,3 +283,7 @@ Circle::~Circle()
 | 18  | static 변수 초기화: `int Example::val = 7;`                                                                  |
 | 19  | 3                                                                                                       |
 | 20  | a                                                                                                       |
+| 21  | [7-21](file:///Users/jeong-yongseog/cpp/시험공부/7장/circle/7-21.cpp)                                        |
+| 22  | public(생성자 앞에, 생성자 사용을 위해),  static int getCount(Counter::get때문에),                                      |
+| 23  |                                                                                                         |
+|     |                                                                                                         |
