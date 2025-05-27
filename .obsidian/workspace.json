@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "대학강의/컴퓨터구조/컴퓨터 구조.md",
+                "file": "대학강의/문제해결프로그래밍/흐름.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "컴퓨터 구조"
+              "title": "흐름"
             }
           }
         ]
@@ -142,13 +142,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "대학강의/데이터구조/재귀.md",
+                "file": "대학강의/문제해결프로그래밍/흐름.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "재귀 의 개요"
+              "title": "흐름 의 개요"
             }
           },
           {
@@ -190,18 +190,18 @@
       "periodic-notes:Open today": false
     }
   },
-  "active": "da786429fa37cead",
+  "active": "dac1545506f8b0ad",
   "lastOpenFiles": [
-    "대학강의/객체지향/CPP.md",
-    "대학강의/컴퓨터구조/컴퓨터 구조.md",
-    "Calendar/Daily/2025-02-24.md",
+    "대학강의/문제해결프로그래밍/강의 내용.md",
+    "대학강의/문제해결프로그래밍/흐름.md",
+    "확통.md",
     "Calendar/Daily/2025-05-22.md",
+    "대학강의/컴퓨터구조/컴퓨터 구조.md",
+    "대학강의/객체지향/CPP.md",
+    "Calendar/Daily/2025-02-24.md",
     "대학강의/컴퓨터구조/컴퓨터구조_4장_텍스트정리.md",
     "대학강의/컴퓨터구조/컴퓨터구조_4장_텍스트요약본.md",
     "대학강의/OSS/OSS란?.md",
-    "확통.md",
-    "대학강의/문제해결프로그래밍/강의 내용.md",
-    "대학강의/문제해결프로그래밍/흐름.md",
     "대학강의/OSS/Github.md",
     "대학강의/데이터구조/재귀.md",
     "대학강의/데이터구조/자료구조.md",
