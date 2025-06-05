@@ -229,3 +229,16 @@
 
 
 docker 가상화 분리된 파트 시험
+이미지 핸들링에 대한 커맨드 시험
+- ``docker images``
+- ``docker rmi <image>``
+
+docker run 
+-e 파트는 시험 X
+-d 중
+
+contaoner 와의 interaction
+``docker exec <container><command>``
+
+``docker diff <container>``
+``doocker commit <container> <imagename>``

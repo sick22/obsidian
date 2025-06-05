@@ -292,3 +292,15 @@ Circle::~Circle()
 ###### 8장 퀴즈
 [8-1](file:///Users/jeong-yongseog/cpp/시험공부/8장/8-1.cpp)
 [8-5](file:///Users/jeong-yongseog/cpp/시험공부/8장/8-5.cpp)
+
+# 상속
+cpp는 다중 상속
+부모 클래스는 슈퍼 클래스
+자식 클래스는 서브 클래스
+
+XXOXXO
+###### 10장 #퀴즈
+1 `class Satellite : public Rocket, public Computer{}`
+3 오버로딩 : printArea() 
+4  함수 덮어쓰기 : printArea() 부모 클래스를 자식에서 업데이트
+5 오버라이딩 : 부모 클래스 앞에 virtual 자식 맨 마지막에 override(권장사항)
