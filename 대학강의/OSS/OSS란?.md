@@ -242,3 +242,10 @@ contaoner 와의 interaction
 
 ``docker diff <container>``
 ``doocker commit <container> <imagename>``
+
+
+컨테이너를 종료했다면 html 파일은 어떻게 되는가?
+포트설정 할 수 있음
+db -> back -> front
+compose를 통해 할 수 있음
+-p, -v, -d 기억할 것
