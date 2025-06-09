@@ -249,3 +249,7 @@ contaoner 와의 interaction
 db -> back -> front
 compose를 통해 할 수 있음
 -p, -v, -d 기억할 것
+
+$docker build .
+
+compose.yml 이해
