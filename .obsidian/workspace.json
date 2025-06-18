@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Calendar/Daily/2025-06-12.md",
+                "file": "대학강의/객체지향/CPP.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "2025-06-12"
+              "title": "CPP"
             }
           }
         ]
@@ -192,8 +192,8 @@
   },
   "active": "da786429fa37cead",
   "lastOpenFiles": [
-    "대학강의/객체지향/CPP.md",
     "Calendar/Daily/2025-06-12.md",
+    "대학강의/객체지향/CPP.md",
     "대학강의/데이터구조/자료구조.md",
     "대학강의/데이터구조/흐름.md",
     "대학강의/데이터구조/재귀.md",

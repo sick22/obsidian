@@ -275,8 +275,8 @@ Circle::~Circle()
 | 10  | 1. O<br>2. X (컴파일러가 판단하여)<br>3. X<br>4. O                                                                    |
 | 11  | 짧은 함수를 여러번 호출해야할 때                                                                                           |
 | 12  |                                                                                                              |
-| 13  |                                                                                                              |
-| 14  |                                                                                                              |
+| 13  | std::string void printInfo() student s(afsjds) 안해줌                                                           |
+| 14  | const해두고 수정함 Box는 private에 선언됐는데 호출함                                                                         |
 | 15  | - 생성자는 this가 있어야 하는데<br>    <br>- static 함수에는 this가 없으므로<br>    <br>- static 생성자는 존재할 수 없음 → **컴파일 에러**      |
 | 16  | 불가능<br>`static → static` ✅<br>`instance → instance` ✅<br>`static → instance` ❌<br>`instance → static` ✅      |
 | 17  | a (static) → 1회<br>b (instance) → 호출하는 만큼                                                                    |
