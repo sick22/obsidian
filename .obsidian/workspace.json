@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "대학강의/객체지향/CPP.md",
+                "file": "대학강의/OSS/OSS란?.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "CPP"
+              "title": "OSS란?"
             }
           }
         ]
@@ -192,8 +192,9 @@
   },
   "active": "da786429fa37cead",
   "lastOpenFiles": [
-    "Calendar/Daily/2025-06-12.md",
+    "대학강의/OSS/Github.md",
     "대학강의/객체지향/CPP.md",
+    "Calendar/Daily/2025-06-12.md",
     "대학강의/데이터구조/자료구조.md",
     "대학강의/데이터구조/흐름.md",
     "대학강의/데이터구조/재귀.md",
@@ -208,7 +209,6 @@
     "Calendar/Daily/2025-02-24.md",
     "대학강의/컴퓨터구조/컴퓨터구조_4장_텍스트정리.md",
     "대학강의/컴퓨터구조/컴퓨터구조_4장_텍스트요약본.md",
-    "대학강의/OSS/Github.md",
     "Calendar/Daily/2025-05-15.md",
     "무제.canvas",
     "2025-05-12.md",

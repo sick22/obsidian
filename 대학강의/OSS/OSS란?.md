@@ -194,7 +194,7 @@
 ### 버그 트래킹 (Bug Tracking)
 
 - 버그 트래킹의 정의: 시스템 결함이나 기능 요청 등의 이슈를 관리
-- 다양한 용어:  
+- 다양한 용어:   
   - Issue, Ticket, Defect, Artifact, Request
 - Ticket은 트래커 데이터베이스 내 하나의 항목을 의미
 
@@ -237,7 +237,7 @@ docker run
 -e 파트는 시험 X
 -d 중
 
-contaoner 와의 interaction
+container 와의 interaction
 ``docker exec <container><command>``
 
 ``docker diff <container>``
