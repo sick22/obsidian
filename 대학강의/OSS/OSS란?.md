@@ -245,6 +245,8 @@ container 와의 interaction
 
 
 컨테이너를 종료했다면 html 파일은 어떻게 되는가?
+컨테이너 내부에만 HTML저장한 경우 삭제하면 사라짐
+호스트 디렉토리와 마운트를 한 경우 영구 저장됨
 포트설정 할 수 있음
 db -> back -> front
 compose를 통해 할 수 있음
