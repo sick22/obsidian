@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "NLP/Dialog gpt.md",
+                "file": "AI/Dialog gpt.md",
                 "mode": "source",
                 "source": false
               },
@@ -27,7 +27,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "NLP/amaydle npc-dialogue.md",
+                "file": "AI/amaydle npc-dialogue.md",
                 "mode": "source",
                 "source": false
               },
@@ -41,12 +41,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "NLP/프로젝트.md",
+                "file": "AI/미래.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "프로젝트"
+              "title": "미래"
             }
           },
           {
@@ -55,16 +55,30 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "NLP/프로젝트.md",
+                "file": "확통.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "프로젝트"
+              "title": "확통"
+            }
+          },
+          {
+            "id": "38d4316f735c221b",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "AI/fine-tuning.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "fine-tuning"
             }
           }
         ],
-        "currentTab": 3
+        "currentTab": 4
       }
     ],
     "direction": "vertical"
@@ -233,17 +247,23 @@
       "periodic-notes:Open today": false
     }
   },
-  "active": "6e5766c52101cd90",
+  "active": "38d4316f735c221b",
   "lastOpenFiles": [
-    "NLP/amaydle npc-dialogue.md",
-    "NLP/github.md",
-    "NLP/Dialog gpt.md",
-    "NLP/프로젝트.md",
-    "무제.md",
-    "NLP",
     "확통.md",
-    "대학강의/OSS/OSS란?.md",
+    "AI/fine-tuning.md",
     "README.md",
+    "무제.md",
+    "Unity/Monobehaviur.md",
+    "Unity/Component.md",
+    "Unity/Animation.md",
+    "Lang/python.md",
+    "Lang/cpp.md",
+    "AI/미래.md",
+    "AI/amaydle npc-dialogue.md",
+    "AI/Dialog gpt.md",
+    "AI/semyung github.md",
+    "AI",
+    "대학강의/OSS/OSS란?.md",
     "대학강의/OSS/Github.md",
     "대학강의/객체지향/CPP.md",
     "Calendar/Daily/2025-06-12.md",
@@ -256,13 +276,7 @@
     "대학강의/문제해결프로그래밍/흐름.md",
     "대학강의/문제해결프로그래밍/강의 내용.md",
     "Calendar/Daily/2025-02-24.md",
-    "대학강의/컴퓨터구조/컴퓨터구조_4장_텍스트정리.md",
-    "대학강의/컴퓨터구조/컴퓨터구조_4장_텍스트요약본.md",
-    "Calendar/Daily/2025-05-15.md",
     "무제.canvas",
-    "2025-05-12.md",
-    "Calendar/Daily/2025-05-12.md",
-    "Calendar/Daily/2025-05-07.md",
     "AI SW 전문가 튜토리얼",
     "깃허브",
     "대학강의/객체지향",
