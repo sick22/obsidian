@@ -69,12 +69,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "AI/미래.md",
+                "file": "kist.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "미래"
+              "title": "kist"
             }
           }
         ],
@@ -249,14 +249,14 @@
   },
   "active": "38d4316f735c221b",
   "lastOpenFiles": [
+    "확통.md",
+    "kist.md",
+    "AI/미래.md",
     "AI/semyung github.md",
     "AI/Dialog gpt.md",
     "AI/fine-tuning.md",
     "AI/amaydle npc-dialogue.md",
-    "AI/미래.md",
-    "확통.md",
     "README.md",
-    "무제.md",
     "Unity/Monobehaviur.md",
     "Unity/Component.md",
     "Unity/Animation.md",
