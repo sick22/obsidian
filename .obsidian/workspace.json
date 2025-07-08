@@ -83,7 +83,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Faster R-CNN.md",
+                "file": "AI/Faster R-CNN.md",
                 "mode": "source",
                 "source": false
               },
@@ -261,10 +261,10 @@
       "periodic-notes:Open today": false
     }
   },
-  "active": "a8777f590ff8a332",
+  "active": "274cfd5e0c0e8e16",
   "lastOpenFiles": [
     "AI/kist.md",
-    "Faster R-CNN.md",
+    "AI/Faster R-CNN.md",
     "확통.md",
     "AI/미래.md",
     "AI/semyung github.md",
