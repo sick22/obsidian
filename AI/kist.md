@@ -1,6 +1,6 @@
  물체 인식 역사(YOLO)
 컴퓨터 비전 - 컴퓨터가 사람과 같이 인식하도록
-방식 | 이진수의 패턴을 찾고 학습해서 새로운 이미지의 패턴을 분석하여 이미지를 인식
+방식 | 이진수의 패턴을 찾고 학습해서 새로운 이미지의 패턴을 분석, 비교하여 이미지를 인식
 목표 | 이미지에서 우리가 원하는 물체를 끌어오는것
 
 1. 어떤 물체를 끌어올 것인가?
@@ -55,7 +55,7 @@ local features 의 중요한 목록들
 
 ###  **SIFT**
 	 position 뿐만 아니라 scale까지 변수 2차 미분(1차 미분 값의 차)
-방향성을 갖게 되어 비교할 때의 성능 향상
+	 방향성을 갖게 되어 비교할 때의 성능 향상
 
 ### **SURF**
 	 SIFT보다 조금 빠른 feature 2차 미분
@@ -108,6 +108,8 @@ True positive, True negative, False negative, False positive 를 통해 정확�
 
 **Convolutional Neural Network (CNN)**
 
+이미지를 분류
+
 End-to-End
 convolutional filtering 
 	필터를 통해 윈도우 사이즈 만큼의 주변의 데이터의 가중치를 통해 관계를 알아냄
@@ -138,4 +140,38 @@ skip connetions (크기가 줄지 않고 역전파를 시켜 약점을 강화)
 과적합 (한가지 분야에 너무 학습 되어 있다면 다른 변동성을 가진 데이터에 대해 큰 오차 발생)
 
 
+
+---
+
+**R-CNN** (2-stage)
+영역을 찾기 힘들었던 이전 알고리즘가 달리 영역을 통해 detection 가능
+
+color 값을 기준으로 수많은 사각형을 생성 -> 모든 사각형을 비교하여 찾으려는 물체를 분류
+
+**Fast R-CNN**
+모든 사각형을 비교하는 것이 아니라 feature map 한 번만 계산함
+
+**Faster R-CNN**
+color 값으로 뽑아 내는 것(selective search)이 아닌 RPN으로 확률 높은 사각형 생성
+
+**Mask R-CNN**
+
+
+region proposal network RPN - 앵커박스 가정시킨 후 모든 화면을 탐색 
+selective search - 색으로 앵커 박스를 찾아서
+
+----
+
+**YOLO** (1-stage)
+한 번에 사각형, feature 모두 찾아냄.  초반에는 성능이 중요할 경우에 잘 사용되지 않음
+
+---
+
+## Transformer-Based Detector
+
+End-to-End
+
+모든 영역에서의 정보를 결합함 (모든 영역을 보다보니 성능면에서 1-stage보다 떨어짐)
+
+R-CNN은 사각형을 골라내는 후처리(NMS)가 필요하지만 transformer는 object만 찾아서 알려주기에 후처리가 필요없음.
 
