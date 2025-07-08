@@ -2,6 +2,20 @@
 
 ---
 
+| **용어**               | **풀네임**                         | **간단한 정의**                                                                       |
+| -------------------- | ------------------------------- | -------------------------------------------------------------------------------- |
+| **CNN**              | Convolutional Neural Network    | 이미지의 시각적 특징을 추출하는 딥러닝 신경망 구조                                                     |
+| **RPN**              | Region Proposal Network         | 물체가 있을만한 후보 영역(Bounding Box)을 CNN 위에서 자동으로 찾아주는 네트워크                             |
+| **ROI**              | Region of Interest              | 관심 영역. 후보 박스(proposal) 하나하나를 의미                                                  |
+| **ROI Pooling**      | Region of Interest Pooling      | 다양한 크기의 ROI들을 고정 크기 (예: 7x7)로 변환하는 과정                                            |
+| **ROI Align**        | Region of Interest Align        | ROI Pooling의 개선 버전으로, 더 정확하게 영역을 변환함 (quantization 없이 bilinear interpolation 사용) |
+| **NMS**              | Non-Maximum Suppression         | 겹치는 박스 중 점수 가장 높은 것만 남기고 나머지 제거하는 방식                                             |
+| **IoU**              | Intersection over Union         | 예측한 박스와 정답 박스의 겹치는 비율 (정확도 평가 기준)                                                |
+| **BBox Regression**  | Bounding Box Regression         | 박스 위치를 정답에 가깝게 조정하는 회귀 예측                                                        |
+| **Objectness Score** | 물체인지 아닌지를 판단하는 확률 점수 (RPN이 예측함) |                                                                                  |
+
+---
+
 ## Step 1: 전체 개요 - 왜 Region Proposal이 필요한가
 
 딥러닝 기반 객체 탐지(Object Detection)에서 모델은 이미지 안에 **무엇이 있는지**(분류)와 **어디에 있는지**(위치)를 동시에 판단해야 함.
@@ -15,10 +29,10 @@
 
 ## Step 2: Region Proposal이란?
 
-**Region Proposal**은 입력 이미지에서 **물체가 있을 법한 후보 영역(Bounding Box)**들을 자동으로 찾아내는 과정임.
+**Region Proposal**은 입력 이미지에서 **물체가 있을 법한 후보 영역(Bounding Box)** 들을 자동으로 찾아내는 과정임.
 
 기존 방식 (Sliding Window, Selective Search 등)은 느리고 비효율적이었음.  
-→ 그래서 **딥러닝 기반 RPN (Region Proposal Network)**이 등장함.
+→ 그래서 **딥러닝 기반 RPN (Region Proposal Network)** 이 등장함.
 
 ---
 
@@ -189,3 +203,14 @@ ROI Pooling 결과를 바탕으로 다음 작업 수행:
 3. RPN + ROI Head 결합 후 joint fine-tuning
 
 → 하지만 실제 구현에서는 대부분 **end-to-end joint training** 사용함
+
+---
+
+
+|                            | RCNN            | Fast RCNN       | Faster RCNN     |
+|----------------------------|------------------|------------------|------------------|
+| **Proposal Generation Method** | Selective Search | Selective Search | RPN              |
+| **Proposal Generation Time**   | 1500 ms           | 1500 ms           | 10 ms            |
+| **Predictions for Generated Proposals Time / Image** | 47000 ms         | 320 ms           | 190 ms           |
+| **Speedup Factor**            | X                | 25X              | 250X             |
+
