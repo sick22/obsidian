@@ -104,9 +104,37 @@
               "icon": "lucide-file",
               "title": "DETR"
             }
+          },
+          {
+            "id": "f7c535f5d6f82069",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "model/DETR.md",
+                "mode": "preview",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "DETR"
+            }
+          },
+          {
+            "id": "4b600fff44dbf30a",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "model/Transformer.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Transformer"
+            }
           }
         ],
-        "currentTab": 6
+        "currentTab": 8
       }
     ],
     "direction": "vertical"
@@ -275,12 +303,14 @@
       "periodic-notes:Open today": false
     }
   },
-  "active": "63d4cec713620d2b",
+  "active": "4b600fff44dbf30a",
   "lastOpenFiles": [
-    "model/Dialog gpt.md",
+    "model/ViT.md",
+    "model/Transformer.md",
     "model/Faster R-CNN.md",
-    "AI/semyung github.md",
+    "model/Dialog gpt.md",
     "model/DETR.md",
+    "AI/semyung github.md",
     "AI/fine-tuning.md",
     "model",
     "AI/kist.md",
@@ -303,8 +333,6 @@
     "대학강의/데이터구조/재귀.md",
     "Calendar/Daily/2025-06-06.md",
     "Calendar/Daily/2025-05-22.md",
-    "대학강의/컴퓨터구조/컴퓨터 구조.md",
-    "대학강의/문제해결프로그래밍/흐름.md",
     "무제.canvas",
     "AI SW 전문가 튜토리얼",
     "깃허브",
