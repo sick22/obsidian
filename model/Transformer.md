@@ -9,10 +9,12 @@ object detection에 대한 부분도 연구가 이뤄지고 있다.(DETR, ViT)
 transformer는 토큰화된 임베딩 벡터 값을 이용해 학습하므로 토큰화가 중요하다. 
 attention을 이용한 구조로 이뤄져있다. 
 토큰화된 백터는 가중치 행렬을 통과하여 각각 query, keys, values로 변환된다. 이때 세가지 구성요소가 같은 벡터값에서 이뤄진다면 그건 self attention에 해당한다. 
-query 값과 key 값의 곱을 통해 value 값과의 가충치합을 구하게 된다. 이 과정을 통해 각각의 토큰이 나머지 토큰들과 어떤 연관성을 가지는지에 대한 attention score가 나온다 이 값에 softmax 함수를 적용용하여 값이 1인 attention weights가 나온다.
+query 값과 key 값의 곱을 통해 value 값과의 가충치합을 구하게 된다. 이 과정을 통해 각각의 토큰이 나머지 토큰들과 어떤 연관성을 가지는지에 대한 attention score가 나온다 이 값에 softmax 함수를 적용용하여 값이 1인 attention weights가 나온다. value에다가 attention weights를 곱하고 더하여 토큰에 대한 표현을 얻는다.
 
 그 값을 residual connection과 normalization을 거쳐서 최종 출력을 구한다. 
 
-이과정에서 모든 쿼리에 대해서 병렬로 한 번에 진행하므로 multihead self-attention이라고 한다. 출력 값들은 decoder의 key와 value 값으로 들어간다. 그 다음 인코더와 같은 과정을 거친다.
+이과정에서 모든 쿼리에 대해서 병렬로 한 번에 진행하므로 multihead self-attention이라고 한다. 출력 값들은 decoder의 두번째 attention layer인 encoder-decoder attention의 key와 value 값으로 들어간다.query는 디코더의 그 전 은닉층들을 통과한 query 값이 들어온다. 그 다음 인코더와 같은 과정을 거친다.
+
+mutihead self-attention은 query, key , value를 독립적인 attention 연산을 진행할 수 있고 진행된 각각의 결과들을 concatenate를 진행한다
 
 
