@@ -20,8 +20,23 @@
               "icon": "lucide-file",
               "title": "무제"
             }
+          },
+          {
+            "id": "9ca18869abb55789",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "대학강의/머신러닝/무제.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "무제"
+            }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -191,10 +206,13 @@
       "periodic-notes:Open today": false
     }
   },
-  "active": "9ac65237645a00fb",
+  "active": "9ca18869abb55789",
   "lastOpenFiles": [
-    "대학강의/데이터베이스/무제.md",
     "대학강의/이산수학/무제.md",
+    "AI/물체 인식 역사.md",
+    "대학강의/머신러닝/무제.md",
+    "대학강의/머신러닝",
+    "대학강의/데이터베이스/무제.md",
     "대학강의/이산수학",
     "대학강의/컴퓨터 네크워크/용어.md",
     "대학강의/데이터베이스",
@@ -202,7 +220,6 @@
     "AI/semyung github.md",
     "대학강의/컴퓨터 네크워크",
     "AI/fine-tuning.md",
-    "AI/물체 인식 역사.md",
     "Calendar/Daily/2025-08-05.md",
     "C++기초 플러스/History.md",
     "확통.md",
@@ -223,13 +240,11 @@
     "Unity/Monobehaviur.md",
     "Unity/Component.md",
     "Unity/Animation.md",
-    "Lang/python.md",
     "AI",
     "무제.canvas",
     "AI SW 전문가 튜토리얼",
     "깃허브",
     "대학강의/객체지향",
-    "Pasted image 20250313104200.png",
-    "대학강의/OSS"
+    "Pasted image 20250313104200.png"
   ]
 }
