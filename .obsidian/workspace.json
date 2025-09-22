@@ -67,13 +67,16 @@
             "id": "b4aa0c3825877344",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "canvas",
               "state": {
-                "file": "대학강의/OSS기반SW프로그래밍/무제.md",
-                "mode": "source",
-                "source": false
+                "file": "무제.canvas",
+                "viewState": {
+                  "x": 0,
+                  "y": 0,
+                  "zoom": 0
+                }
               },
-              "icon": "lucide-file",
+              "icon": "lucide-layout-dashboard",
               "title": "무제"
             }
           }
@@ -250,12 +253,14 @@
   },
   "active": "b4aa0c3825877344",
   "lastOpenFiles": [
-    "대학강의/고전읽기.md",
+    "무제.canvas",
     "대학강의/데이터베이스/무제.md",
+    "대학강의/OSS기반SW프로그래밍/무제.md",
+    "Calendar/Daily/2025-09-18.md",
+    "대학강의/이산수학/무제.md",
+    "대학강의/고전읽기.md",
     "대학강의/이산수학/2장_수학적_모델과_논리_요약.md",
     "대학강의/머신러닝/무제.md",
-    "대학강의/이산수학/무제.md",
-    "대학강의/OSS기반SW프로그래밍/무제.md",
     "대학강의/컴퓨터 네크워크/용어.md",
     "C++기초 플러스/History.md",
     "C++기초 플러스/분기 구문과 논리 연산자.md",
@@ -281,11 +286,8 @@
     "AI/Model/3D (Radiance fields).md",
     "미래.md",
     "AI/Model/Transformer.md",
-    "AI/amaydle npc-dialogue.md",
-    "AI/Model/ViT.md",
     "AI/Model",
     "AI",
-    "무제.canvas",
     "AI SW 전문가 튜토리얼",
     "Pasted image 20250313104200.png"
   ]
