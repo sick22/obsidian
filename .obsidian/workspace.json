@@ -62,26 +62,9 @@
               "icon": "lucide-file",
               "title": "History"
             }
-          },
-          {
-            "id": "b4aa0c3825877344",
-            "type": "leaf",
-            "state": {
-              "type": "canvas",
-              "state": {
-                "file": "무제.canvas",
-                "viewState": {
-                  "x": 0,
-                  "y": 0,
-                  "zoom": 0
-                }
-              },
-              "icon": "lucide-layout-dashboard",
-              "title": "무제"
-            }
           }
         ],
-        "currentTab": 4
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -251,9 +234,11 @@
       "periodic-notes:Open today": false
     }
   },
-  "active": "b4aa0c3825877344",
+  "active": "9ca18869abb55789",
   "lastOpenFiles": [
+    "대학강의/컴퓨터 네크워크/용어.md",
     "무제.canvas",
+    "C++기초 플러스/History.md",
     "대학강의/데이터베이스/무제.md",
     "대학강의/OSS기반SW프로그래밍/무제.md",
     "Calendar/Daily/2025-09-18.md",
@@ -261,8 +246,6 @@
     "대학강의/고전읽기.md",
     "대학강의/이산수학/2장_수학적_모델과_논리_요약.md",
     "대학강의/머신러닝/무제.md",
-    "대학강의/컴퓨터 네크워크/용어.md",
-    "C++기초 플러스/History.md",
     "C++기초 플러스/분기 구문과 논리 연산자.md",
     "무제.base",
     "대학강의/컴퓨터 네크워크/무제.md",
