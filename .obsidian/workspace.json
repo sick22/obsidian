@@ -37,12 +37,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "대학강의/2-2/OSS기반SW프로그래밍/cpp_analysis.md",
+                "file": "대학강의/2-2/이산수학/무제.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "cpp_analysis"
+              "title": "무제"
             }
           },
           {
@@ -246,29 +246,29 @@
   },
   "active": "e6b17d701e44e003",
   "lastOpenFiles": [
-    "대학강의/2-2/이산수학/무제.md",
+    "대학강의/2-2/머신러닝/정리요약.md",
+    "대학강의/2-2/머신러닝/무제.md",
+    "대학강의/2-2/머신러닝/ML_02_LinearRegression.pdf",
     "대학강의/2-2/OSS기반SW프로그래밍/cpp_analysis.md",
     "대학강의/2-2/OSS기반SW프로그래밍/무제.md",
+    "대학강의/2-2/컴퓨터 네크워크/컴네.md",
+    "대학강의/2-2/컴퓨터 네크워크/용어.md",
+    "대학강의/2-2/이산수학/무제.md",
+    "확통.md",
+    "Pasted image 20251014184634.png",
+    "Pasted image 20251014184708.png",
+    "미래.md",
     "김유콩.md",
     "대학강의/2-2/이산수학/2장_수학적_모델과_논리_요약.md",
-    "Pasted image 20251014184708.png",
-    "Pasted image 20251014184634.png",
     "대학강의/2-2/고전읽기.md",
-    "대학강의/2-2/머신러닝/정리요약.md",
-    "대학강의/2-2/머신러닝/ML_02_LinearRegression.pdf",
-    "대학강의/2-2/머신러닝/무제.md",
     "대학강의/2-2/데이터베이스/무제.md",
     "대학강의/2-2/데이터베이스/sql_notes.md",
     "대학강의/2-1/OSS/OSS란?.md",
-    "미래.md",
-    "확통.md",
     "대학강의/2-2",
     "대학강의/2-1",
     "대학강의/데이터베이스/sql_notes 1.md",
     "대학강의/sql_notes.md",
     "sql_notes.md",
-    "대학강의/2-2/컴퓨터 네크워크/무제.md",
-    "대학강의/2-2/컴퓨터 네크워크/용어.md",
     "대학강의/머신러닝/머신러닝.md",
     "대학강의/2-2/머신러닝/ML_02_LinearRegression.txt",
     "무제.canvas",
@@ -284,7 +284,6 @@
     "대학강의/2-1/수리논리학/흐름.md",
     "AI/semyung github.md",
     "대학강의/2-2/컴퓨터 네크워크",
-    "AI/fine-tuning.md",
     "Pasted image 20250313104200.png"
   ]
 }
