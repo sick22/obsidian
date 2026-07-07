@@ -132,11 +132,11 @@ AInteractiveLever::AInteractiveLever()
 
 ```mermaid
 graph TD
-    A["1. 하드웨어 입력 (Raw Input) <br> 키보드/마우스/패드 신호 발생"] --> B["2. LocalPlayerSubsystem <br> (UEnhancedInputLocalPlayerSubsystem) <br> 활성화된 컨텍스트(AMC) 탐색"]
-    B --> C["3. 액션 매핑 컨텍스트 (AMC) <br> 모디파이어(Modifiers)를 통한 값 가공 및 필터링"]
-    C --> D["4. 트리거 (Triggers) 평가 <br> Pressed / Hold / Released 등 발동 조건 충돌 판별"]
-    D --> E["5. 입력 액션 (Input Action) <br> IA의 활성화 상태 전이 (Started/Triggered/Completed 등)"]
-    E --> F["6. EnhancedInputComponent 콜백 호출 <br> BindAction으로 바인딩된 C++ 멤버 함수 작동"]
+    A["1단계: 하드웨어 입력 Raw Input (키보드, 마우스, 패드 신호 발생)"] --> B["2단계: LocalPlayerSubsystem (활성화된 컨텍스트 AMC 탐색)"]
+    B --> C["3단계: 액션 매핑 컨텍스트 AMC (모디파이어 Modifiers를 통한 값 가공 및 필터링)"]
+    C --> D["4단계: 트리거 Triggers 평가 (Pressed, Hold, Released 등 발동 조건 충돌 판별)"]
+    D --> E["5단계: 입력 액션 Input Action (Triggered, Started, Completed 등의 상태 전이)"]
+    E --> F["6단계: EnhancedInputComponent 콜백 호출 (바인딩된 C++ 멤버 함수 작동)"]
 ```
 
 ---
@@ -267,6 +267,4 @@ void AMyCharacter::Move(const FInputActionValue& Value)
         AddMovementInput(RightDirection, MovementVector.X);
     }
 }
-```
-
 ```
