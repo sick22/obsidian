@@ -268,3 +268,92 @@ void AMyCharacter::Move(const FInputActionValue& Value)
     }
 }
 ```
+
+---
+
+## 4. 향상된 입력(Enhanced Input) 구현 핵심 API 및 문법
+
+C++ 소스코드 레벨에서 향상된 입력 시스템을 성공적으로 수립하고 제어하기 위해 필수적으로 요구되는 핵심 클래스, 구조체 및 바인딩 인터페이스에 대한 명세입니다.
+
+### ① UEnhancedInputLocalPlayerSubsystem
+로컬 플레이어 단위에서 입력 매핑 컨텍스트(Input Mapping Context, IMC)의 우선순위를 부여하여 활성화하거나 동적으로 해제 제어하는 생명 주기 서브시스템입니다.
+
+- **핵심 목적:** 플레이어의 조작 상황(보행, 운전, UI 모드 등)에 맞춰 실시간으로 조작 매핑 규칙을 컨텍스트 단위로 주입 및 격리하기 위함.
+- **주요 함수 파라미터:**
+  - `AddMappingContext(const UInputMappingContext* MappingContext, int32 Priority)`:
+    - `MappingContext`: 활성화할 IMC 에셋 주소입니다.
+    - `Priority`: 컨텍스트 간의 우선순위 가중치입니다. 숫자가 높을수록 동일 장치 키 입력 바인딩 시 다른 하위 컨텍스트의 입력을 덮어써 가로챕니다.
+  - `RemoveMappingContext(const UInputMappingContext* MappingContext)`:
+    - 활성화되어 있던 특정 IMC를 해제하여 입력 목록에서 소거합니다.
+- **반환 값:** 각 기능 함수는 별도의 데이터를 반환하지 않는 `void` 형식입니다.
+- **기술적 팁 (Technical Tips):**
+  - **Null 검증의 중요성:** 이 서브시스템은 `LocalPlayer` 주소를 통하여 싱글톤 형식으로 가져옵니다. 그러나 로컬 플레이어 컨트롤러를 갖지 않는 클라이언트 액터 대리 프록시(Simulated Proxy)나 서버 AI 컨트롤러가 지배하는 폰에서는 `PC->GetLocalPlayer()` 호출 결과가 `nullptr`을 도출하므로, 예외 검사 없이 서브시스템 메서드를 즉시 호출하면 100% 런타임 크래시가 유발됩니다.
+
+---
+
+### ② UEnhancedInputComponent
+언리얼 C++의 기존 입력 컴포넌트(`UInputComponent`)를 상속 확장하여, 향상된 입력 액션(`UInputAction`) 에셋과 C++의 클래스 멤버 콜백 함수 간의 델리게이트 바인딩을 전담하는 컴포넌트 클래스입니다.
+
+- **핵심 목적:** 특정 입력 액션의 상태(Started, Triggered 등)가 트리거되었을 때, 그 신호를 받아 가공된 데이터를 들고 작동할 C++ 함수를 명시적으로 체인 바인딩하기 위함.
+- **주요 함수 파라미터:**
+  - `BindAction(const UInputAction* Action, ETriggerEvent TriggerEvent, UserClass* Object, FuncType Func)`:
+    - `Action`: 호출 기준이 될 입력 액션(IA) 에셋 주소입니다.
+    - `TriggerEvent`: 발동 타이밍을 조율할 트리거 상태 플래그입니다 (`ETriggerEvent::Started`, `ETriggerEvent::Triggered`, `ETriggerEvent::Completed` 등).
+    - `Object`: 델리게이트를 소유한 대상 인스턴스 주소입니다 (주로 자기 자신을 가리키는 `this` 포인터).
+    - `Func`: 트리거 조건 만족 시 즉시 후속 가동할 클래스 멤버 함수의 주소입니다 (예: `&AMyCharacter::Move`).
+- **반환 값:** 바인딩을 식별하고 관리할 수 있는 `FEnhancedInputBindSignature` 구조체 정보를 반환합니다.
+
+---
+
+### ③ FInputActionValue
+모디파이어(Modifiers) 가공 단계를 완수하고 최종 방출된 입력 액션의 로우 데이터를 C++ 코드가 판독할 수 있도록 가변 타입으로 캡슐화하여 전달하는 구조체 변수 타입입니다.
+
+- **핵심 목적:** 조이스틱(Axis2D), 트리거 패드(Axis1D), 키보드(Boolean) 등 이기종 디바이스의 다차원 입력 형태를 하나의 매개변수 구조체 규격으로 단일화하여 콜백 인자로 전달받기 위함.
+- **주요 함수 파라미터:**
+  - `Get<T>()` [템플릿 함수]:
+    - `T` (템플릿 타입): 수신하고자 하는 구체적 차원 형식입니다.
+    - `bool` (디지털 On/Off), `float` (1D 아날로그 스로틀 등), `FVector2D` (2D 무브먼트 평면 축), `FVector` (3D 가속도 공간 축) 등을 지원합니다.
+- **반환 값:** 지정된 템플릿 인자 `T` 형식에 최적화하여 래핑된 최종 수치값을 반환합니다.
+
+---
+
+### ④ 구현 관용 스니펫 예시
+```cpp
+// 1. SetupPlayerInputComponent 가상 함수 오버라이딩 시의 전형적 바인딩 로직
+void AMyPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+    Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+    // 가동 중인 로컬 플레이어 컨트롤러를 획득하여 서브시스템 검출
+    if (APlayerController* PC = Cast<APlayerController>(GetController()))
+    {
+        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+        {
+            // 디폴트 매핑 컨텍스트(IMC) 주입 (우선순위 0)
+            Subsystem->AddMappingContext(DefaultMappingContext, 0);
+        }
+    }
+
+    // InputComponent를 Enhanced 버전으로 형변환하여 델리게이트 등록
+    if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+    {
+        // 점프(Jump) 액션이 최초 시작(Started)될 때 캐릭터 점프 함수 수행
+        EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
+
+        // 조종(Move) 액션이 유지(Triggered)되는 동안 이동 멤버 함수 호출
+        EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyPlayerCharacter::Move);
+    }
+}
+
+// 2. FInputActionValue 매개변수를 참조하는 콜백 함수 구현 바디
+void AMyPlayerCharacter::Move(const FInputActionValue& Value)
+{
+    // 입력 값에서 2차원 float 벡터 평면 값 복구
+    FVector2D MovementVector = Value.Get<FVector2D>();
+
+    // 방향을 감안하여 실제 캐릭터 위치 변경 유도
+    AddMovementInput(GetActorForwardVector(), MovementVector.Y);
+    AddMovementInput(GetActorRightVector(), MovementVector.X);
+}
+```
+
