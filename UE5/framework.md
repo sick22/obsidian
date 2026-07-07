@@ -357,3 +357,70 @@ void AMyPlayerCharacter::Move(const FInputActionValue& Value)
 }
 ```
 
+---
+
+## 5. 컨트롤러 캐스팅(Casting) 및 서브시스템(Subsystem) 개념
+
+### ① 컨트롤러 캐스팅 (Controller Casting)
+언리얼 C++에서 상위 다형성 포인터인 `AController` 또는 `AActor` 객체를 특정 플레이어 제어 구조를 가진 구체적인 하위 클래스(예: `APlayerController`, `AMyCustomController`) 타입으로 런타임 하향 형변환(Downcasting)하는 문법입니다.
+
+- **핵심 목적:** 일반적인 컨트롤러 참조 데이터로부터 하위 클래스에 고유하게 정의된 로컬 멤버 변수, 특화 기능 함수, 입력 관련 설정 상태 등에 안전하게 접근하기 위함.
+- **주요 함수 파라미터:**
+  - `Cast<T>(UObject* Src)` [템플릿 함수]:
+    - `T`: 변환하여 획득하고자 하는 목표 클래스의 포인터 타입입니다.
+    - `Src`: 형변환 대상이 되는 부모 UObject 기반 객체 포인터입니다.
+- **반환 값:**
+  - 변환 대상 객체 `Src`가 목표 타입 `T`이거나 `T`를 상속받은 자식 클래스인 경우, 안전하게 `T*` 타입의 포인터 주소를 반환합니다.
+  - 변환 대상 객체와 목표 타입 간에 상속 관계적 부합성이 결여된 경우, 어서트 크래시 없이 **`nullptr`**을 안전하게 반환합니다.
+- **기술적 팁 (Technical Tips):**
+  - **RTTI 성능 최적화:** 표준 C++의 `dynamic_cast`는 RTTI(실시간 타입 정보) 파싱 과정에서 무거운 연산 비용이 유발됩니다. 반면 언리얼 C++의 `Cast<T>()`는 UObject 리플렉션 메타데이터 시스템을 자체 내장하고 있어, 런타임 타입 검사 및 변환 오버헤드가 극적으로 감축된 매우 가볍고 안전한 가동 성능을 제공합니다.
+  - **Null Check 의무화:** 캐스팅 결과는 런타임 상황(예: AI가 폰을 임시 조작 중인 경우 PlayerController 캐스팅 실패 등)에 따라 언제든 `nullptr`을 도출할 수 있으므로, 캐스팅 성공 여부를 나타내는 조건부 분기문(`if (TargetController != nullptr)`)을 필수적으로 결합해야 합니다.
+
+---
+
+### ② 서브시스템 (Subsystem)
+언리얼 엔진 내부의 주요 라이프사이클(Engine, Editor, GameInstance, LocalPlayer, World)에 자신의 수명 주기를 완전 동기화(자동 생성 및 소멸)하는 모듈러 방식의 **자동화 싱글톤(Singleton) 객체**입니다.
+
+- **핵심 목적:** 전역 관리자(Manager) 기능 구현 시 복잡한 게임플레이 프레임워크(예: GameMode, GameInstance 등)의 본문 소스코드를 오염시키지 않고, 특정 생명 주기에 따라 관리되는 전담 시스템 컴포넌트를 모듈 형태로 격리 설계하기 위함.
+- **서브시스템의 주요 유형 및 생명 주기:**
+  - `UGameInstanceSubsystem`: 게임 인스턴스(게임의 첫 실행부터 완전히 종료되는 프로그램 전반)의 시작과 끝을 함께하는 싱글톤 매니저입니다.
+  - `UWorldSubsystem`: 특정 레벨 월드가 생성되어 언로드(Unload)될 때까지 수명이 유지되는 월드 전용 매니저입니다.
+  - `ULocalPlayerSubsystem`: 플레이어의 분할 스크린이나 다중 로그인 시, 로컬 플레이어 한 명이 월드에 참가하고 퇴장할 때까지 수명이 유지되는 플레이어 종속 매니저입니다 (예: `UEnhancedInputLocalPlayerSubsystem`).
+- **기술적 특징:**
+  - 별도로 스폰하거나 메모리를 해제하는 코드가 불필요합니다. 해당 수명 주기 객체가 생성될 때 엔진 내부에서 `Initialize()`를 자동 호출해 인스턴스화하고 소멸 시 `Deinitialize()`를 작동시켜 누수를 막아줍니다.
+
+---
+
+### ③ C++ 구현 예제 코드
+```cpp
+// 1. ACharacter를 조종하는 컨트롤러를 캐스팅하여 활용하는 예시
+void AMyCharacter::PerformPlayerAction()
+{
+    // GetController()는 기본 AController* 포인터를 반환함
+    AController* BaseController = GetController();
+
+    // PlayerController 클래스로 런타임 하향 형변환 수행
+    if (APlayerController* PlayerPC = Cast<APlayerController>(BaseController))
+    {
+        // 캐스팅에 성공한 경우에만 로컬 플레이어 전용 기능(마우스 커서 노출 등) 수행
+        PlayerPC->bShowMouseCursor = true;
+
+        // LocalPlayer Subsystem을 호출하여 활용하는 계층적 예시
+        if (ULocalPlayer* LocalPlayer = PlayerPC->GetLocalPlayer())
+        {
+            // 로컬 플레이어의 수명 주기에 바인딩된 입력 서브시스템을 쿼리
+            auto* InputSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+            if (InputSubsystem)
+            {
+                // 입력 컨텍스트 조율
+            }
+        }
+    }
+    else if (AAIController* AIController = Cast<AAIController>(BaseController))
+    {
+        // AI가 제어하는 상태인 경우, 별도의 AI 블랙보드 데이터 조작 등 수행
+    }
+}
+```
+
+
