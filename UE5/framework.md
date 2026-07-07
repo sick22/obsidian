@@ -121,3 +121,152 @@ AInteractiveLever::AInteractiveLever()
     AutoReceiveInput = EAutoReceiveInput::Player0;
 }
 ```
+
+---
+
+## 3. 향상된 입력(Enhanced Input) 시스템 워크플로우
+
+향상된 입력(Enhanced Input) 시스템은 단순 1대1 키 매핑을 탈피하여, 모디파이어(Modifiers)와 트리거(Triggers)를 경유해 입력 데이터를 정형화하고 런타임에 입력 컨텍스트를 동적으로 결합/분리하는 고도화된 프레임워크입니다. 하드웨어 입력이 C++ 멤버 함수 콜백으로 도달하는 구체적인 워크플로우는 다음과 같습니다.
+
+### ① 입력 신호 전파 시퀀스 (Input Flow)
+
+```mermaid
+graph TD
+    A["1. 하드웨어 입력 (Raw Input) <br> 키보드/마우스/패드 신호 발생"] --> B["2. LocalPlayerSubsystem <br> (UEnhancedInputLocalPlayerSubsystem) <br> 활성화된 컨텍스트(AMC) 탐색"]
+    B --> C["3. 액션 매핑 컨텍스트 (AMC) <br> 모디파이어(Modifiers)를 통한 값 가공 및 필터링"]
+    C --> D["4. 트리거 (Triggers) 평가 <br> Pressed / Hold / Released 등 발동 조건 충돌 판별"]
+    D --> E["5. 입력 액션 (Input Action) <br> IA의 활성화 상태 전이 (Started/Triggered/Completed 등)"]
+    E --> F["6. EnhancedInputComponent 콜백 호출 <br> BindAction으로 바인딩된 C++ 멤버 함수 작동"]
+```
+
+---
+
+### ② 단계별 내부 메커니즘 상세
+
+#### 1. 하드웨어 입력 발생 (Raw Input Device)
+- 사용자의 컨트롤러, 마우스, 키보드 등의 물리 장치 입력이 플랫폼 뷰포트 레이어를 거쳐 엔진 내부로 유입됩니다.
+
+#### 2. EnhancedInputLocalPlayerSubsystem 탐색
+- 입력 데이터가 로컬 플레이어와 매핑된 **`UEnhancedInputLocalPlayerSubsystem`**에 도달합니다.
+- 이 서브시스템은 현재 플레이어에게 활성화(`AddMappingContext`)되어 있는 **액션 매핑 컨텍스트(Action Mapping Context, AMC)**들의 우선순위(Priority)를 분석합니다.
+
+#### 3. 액션 매핑 컨텍스트 (AMC) 및 모디파이어 (Modifiers) 통과
+- 활성화된 컨텍스트 내에서 물리 키와 바인딩된 입력 액션(`UInputAction`)을 매핑합니다.
+- 입력 구조에 설정된 **모디파이어(Modifiers)**들이 로우(Raw) 입력 데이터를 변환 및 가공합니다.
+  - *Swizzle Input Axis Values:* 1차원 Float 입력을 2차원/3차원 좌표계(X, Y, Z축)로 축을 스왑합니다.
+  - *Negate:* 입력 값을 반전(음수화)시킵니다. (예: S키 입력 시 앞으로 이동 축 값에 -1을 곱함)
+  - *Dead Zone:* 아날로그 조이스틱의 미세한 쏠림 노이즈 오차를 차단합니다.
+
+#### 4. 트리거 (Triggers) 평가
+- 가공된 입력 데이터가 **트리거(Triggers)** 규칙을 통과하는지 검증합니다.
+  - *Down:* 키를 누르고 있는 매 프레임 동작을 유발합니다.
+  - *Pressed:* 키를 누른 최초 1프레임에만 유발합니다.
+  - *Hold:* 키를 누르고 지정한 초 단위 시간이 경과해야 유발합니다.
+
+#### 5. 입력 액션 (Input Action, IA) 상태 방출
+- 트리거 조건이 충족되면, 입력 액션의 상태(State)가 결정되어 콜백 델리게이트를 유발합니다.
+  - **`Started`:** 트리거 평가가 시작된 첫 프레임.
+  - **`Triggered`:** 트리거 조건이 계속 충족되고 있는 상태 (매 프레임 호출).
+  - **`Ongoing`:** 트리거(예: Hold) 조건이 동작 중이지만 아직 완결 조건에 미달한 상태.
+  - **`Completed`:** 트리거 조건이 최종 완료된 프레임.
+  - **`Canceled`:** 트리거 작동 도중 입력이 중단된 상태.
+
+#### 6. EnhancedInputComponent 바인딩 및 함수 호출
+- 액터 또는 캐릭터의 `SetupPlayerInputComponent` 가상 함수 내에서 캐스팅하여 획득한 **`UEnhancedInputComponent`**를 통해, 등록해 둔 C++ 멤버 함수가 트리거 상태에 맞춰 호출됩니다.
+
+---
+
+### ③ 기술적 팁 (Technical Tips)
+- **컨텍스트 우선순위 관리:** UI 마우스 상호작용 상태이거나 운송수단(Vehicle) 탑승 시에는 기존 보행 컨텍스트의 우선순위보다 더 높은 우선순위로 새로운 컨텍스트를 추가하거나, 기존 컨텍스트를 서브시스템에서 `RemoveMappingContext`로 제거해야 입력의 혼선이 차단됩니다.
+- **Null 포인터 주의:** `UEnhancedInputLocalPlayerSubsystem`은 `APlayerController` 객체로부터 획득하므로, 멀티플레이어 환경의 더미(Client Proxy) 액터나 AI가 조작하는 폰 등 **로컬 플레이어 컨트롤러가 부재한 객체**에서는 서브시스템 쿼리 시 `nullptr`이 반환되어 충돌이 유발될 수 있으므로 예외 처리를 반드시 탑재해야 합니다.
+
+---
+
+### ④ C++ 예시 코드
+
+#### `MyCharacter.h` (헤더 선언)
+```cpp
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Character.h"
+#include "InputActionValue.h" // Input Action 값 획득용 헤더
+#include "MyCharacter.generated.h"
+
+UCLASS()
+class MYPROJECT_API AMyCharacter : public ACharacter
+{
+    GENERATED_BODY()
+
+public:
+    AMyCharacter();
+
+    virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+protected:
+    // 1. 에셋 형태로 대입할 액션 매핑 컨텍스트(AMC)와 입력 액션(IA) 전방 선언
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+    class UInputMappingContext* DefaultMappingContext;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+    class UInputAction* MoveAction;
+
+    // 2. 바인딩할 콜백 함수
+    void Move(const FInputActionValue& Value);
+};
+```
+
+#### `MyCharacter.cpp` (구현부)
+```cpp
+#include "MyCharacter.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+
+AMyCharacter::AMyCharacter()
+{
+}
+
+void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+    Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+    // 1. Enhanced Input Subsystem 획득 및 컨텍스트 등록
+    if (APlayerController* PC = Cast<APlayerController>(GetController()))
+    {
+        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+        {
+            // 가장 낮은 우선순위(0)로 디폴트 매핑 컨텍스트 활성화
+            Subsystem->AddMappingContext(DefaultMappingContext, 0);
+        }
+    }
+
+    // 2. EnhancedInputComponent에 C++ 멤버 함수 바인딩
+    if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+    {
+        // MoveAction이 'Triggered' 상태일 때 Move 함수 호출 지정
+        EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyCharacter::Move);
+    }
+}
+
+void AMyCharacter::Move(const FInputActionValue& Value)
+{
+    // 모디파이어를 거쳐 2D 벡터 구조로 정형화된 입력값 파싱
+    FVector2D MovementVector = Value.Get<FVector2D>();
+
+    if (Controller != nullptr)
+    {
+        // 컨트롤러의 회전 방향을 기준으로 전방 및 우측 이동 벡터 산출
+        const FRotator Rotation = Controller->GetControlRotation();
+        const FRotator YawRotation(0, Rotation.Yaw, 0);
+
+        const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+        const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+        // 입력 축 강도에 맞추어 실제 물리 이동 적용
+        AddMovementInput(ForwardDirection, MovementVector.Y);
+        AddMovementInput(RightDirection, MovementVector.X);
+    }
+}
+```
+
+```
