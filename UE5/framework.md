@@ -219,51 +219,74 @@ protected:
 #### `MyCharacter.cpp` (구현부)
 ```cpp
 #include "MyCharacter.h"
+// 향상된 입력 시스템에서 델리게이트 바인딩을 관리하는 핵심 입력 컴포넌트 헤더
 #include "EnhancedInputComponent.h"
+// 로컬 플레이어 단위에서 입력 컨텍스트(IMC)를 관리하는 서브시스템 API 헤더
 #include "EnhancedInputSubsystems.h"
 
 AMyCharacter::AMyCharacter()
 {
+    // 클래스 생성자 본문
 }
 
+// 입력 디바이스 조작 신호와 C++ 멤버 함수를 직접 연결하는 입력 컴포넌트 설정 가상 함수
 void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
+    // 상위 부모 클래스인 ACharacter의 기본 입력 처리 인터페이스 초기화를 선행 진행
     Super::SetupPlayerInputComponent(PlayerInputComponent);
 
     // 1. Enhanced Input Subsystem 획득 및 컨텍스트 등록
+    // 현재 캐릭터를 빙의 조종하고 있는 기본 컨트롤러(GetController)를 APlayerController 타입으로 캐스팅 수행.
+    // 런타임 상에 실제 플레이어(인간 조작자)가 조종하고 있는 유효한 인스턴스인지 판별하기 위함.
     if (APlayerController* PC = Cast<APlayerController>(GetController()))
     {
+        // 플레이어 컨트롤러에 소속된 로컬 플레이어 전용 Enhanced Input Subsystem 인스턴스를 가져옴.
+        // PC->GetLocalPlayer()가 nullptr를 유발할 수 있는 상황(네트워크 프록시, AI 등)에서의 널 포인터 크래시 원천 방지.
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
         {
-            // 가장 낮은 우선순위(0)로 디폴트 매핑 컨텍스트 활성화
+            // 사용자의 조작 키 매핑이 구성되어 있는 default 매핑 컨텍스트(IMC)를 입력 감지 목록에 추가.
+            // 우선순위를 최하위 단계(0)로 기입하여 기본 입력 모드로 주입.
             Subsystem->AddMappingContext(DefaultMappingContext, 0);
         }
     }
 
     // 2. EnhancedInputComponent에 C++ 멤버 함수 바인딩
+    // 시스템에서 인계받은 기본 PlayerInputComponent를 고차원 바인딩이 지원되는 UEnhancedInputComponent 타입으로 다운캐스팅 수행.
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
     {
-        // MoveAction이 'Triggered' 상태일 때 Move 함수 호출 지정
+        // MoveAction 입력 액션 에셋이 'Triggered' 상태(키가 입력 상태를 유지하여 매 프레임 발동)일 때,
+        // 현재 캐릭터 객체(this)의 이동 제어 함수(&AMyCharacter::Move)를 매핑 델리게이트로 호출 등록.
         EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyCharacter::Move);
     }
 }
 
+// 모디파이어를 거친 최종 입력 벡터 세기를 읽어 실제 이동을 가속시키는 콜백 구현 함수
 void AMyCharacter::Move(const FInputActionValue& Value)
 {
-    // 모디파이어를 거쳐 2D 벡터 구조로 정형화된 입력값 파싱
+    // 입력 모디파이어(Swizzle, Negate 등) 정형화 필터를 통과하여 최종 계산된 
+    // 2차원 float 벡터(X/Y 이동 방향 축 데이터) 구조체 정보를 Value 인자로부터 파싱하여 획득.
     FVector2D MovementVector = Value.Get<FVector2D>();
 
+    // 현재 캐릭터를 지배 중인 컨트롤러의 참조 주소 유효성을 사전 체크하여 포인터 크래시 방지
     if (Controller != nullptr)
     {
-        // 컨트롤러의 회전 방향을 기준으로 전방 및 우측 이동 벡터 산출
+        // 1. 컨트롤러가 현재 조준(시선)하고 있는 월드 기준 회전값(Control Rotation) 쿼리
         const FRotator Rotation = Controller->GetControlRotation();
+        
+        // 2. 피치(Pitch/상하)와 롤(Roll/기울기)을 모두 배제하고, 오직 캐릭터의 좌우 회전각(Yaw) 정보만 추출.
+        // 상하 시선 이동 상태(Pitch)에 따라 전진 방향 가속 벡터가 땅속이나 공중 방향으로 비스듬히 오염되어 가속되는 기하 물리 버그 방지.
         const FRotator YawRotation(0, Rotation.Yaw, 0);
 
+        // 3. 추출된 Yaw 회전 행렬을 바탕으로 월드 기준 전방 방향의 1단위 크기 방향 벡터(X축) 추출
         const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+        
+        // 4. 추출된 Yaw 회전 행렬을 바탕으로 월드 기준 우측 방향의 1단위 크기 방향 벡터(Y축) 추출
         const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-        // 입력 축 강도에 맞추어 실제 물리 이동 적용
+        // 5. 전방 방향 벡터에 입력 축의 Y 세기(키보드 W/S, 조이스틱 전후방 세기)를 곱하여 월드 이동 컴포넌트에 가속 신호 인가
         AddMovementInput(ForwardDirection, MovementVector.Y);
+        
+        // 6. 우측 방향 벡터에 입력 축의 X 세기(키보드 A/D, 조이스틱 좌우방 세기)를 곱하여 월드 이동 컴포넌트에 가속 신호 인가
         AddMovementInput(RightDirection, MovementVector.X);
     }
 }
