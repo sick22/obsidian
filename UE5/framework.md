@@ -357,5 +357,62 @@ if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<U
 2. **입력 설정의 영속성 보장:**
    - 게임플레이 도중 캐릭터가 사망하여 컨트롤러가 일시 소멸하거나, 레벨 전환으로 인해 플레이어 컨트롤러 인스턴스가 완전히 재구성되는 런타임 와중에도, 유저가 설정한 커스텀 키 매핑 데이터와 감도 프로필 정보는 프로세스 전반에 걸쳐 유실되지 않고 안전하게 유지되어야 합니다. 수명이 영속적인 `ULocalPlayer`에 입력 데이터를 결합함으로써 매번 컨트롤러 생성 시마다 설정을 처음부터 복원해야 하는 번거로움을 원천 제거한 지능적 설계입니다.
 
+---
+
+## 6. Enhanced Input 핵심 클래스별 포함 관계 및 데이터 흐름
+
+향상된 입력 시스템의 실시간 동작 방식을 깊이 있게 파악하려면 각 클래스들의 **데이터 소유 관계(Inclusion)**와 입력 감지 시의 **데이터 전달(Workflow) 시퀀스**를 계층적으로 맵핑해야 합니다.
+
+### ① 클래스별 소유 관계도 (Inclusion Diagram)
+
+```mermaid
+graph TD
+    subgraph LocalMachine ["1. 하드웨어 및 사용자 엔진 계층 (로컬 전용)"]
+        LP["ULocalPlayer (로컬 플레이어)"] -- "소유 (Owner)" --> Subsystem["UEnhancedInputLocalPlayerSubsystem (입력 서브시스템)"]
+        Subsystem -- "활성화된 AMC 목록 관리" --> AMC["UInputMappingContext (액션 매핑 컨텍스트 에셋)"]
+        AMC -- "매핑 레코드 소유" --> Mapping["Key <--> UInputAction 매핑 쌍"]
+        Mapping -- "값 보정기 소유" --> Modifiers["Modifiers (모디파이어)"]
+        Mapping -- "조건식 소유" --> Triggers["Triggers (트리거)"]
+    end
+
+    subgraph GamePlay ["2. 게임플레이 월드 계층 (복제 가능)"]
+        Pawn["APawn / ACharacter (플레이어 신체 액터)"] -- "소유" --> EIC["UEnhancedInputComponent (향상된 입력 컴포넌트)"]
+        EIC -- "델리게이트 맵 소유" --> Binding["BindAction 레코드 <br> (UInputAction <--> C++ 멤버 함수 주소)"]
+    end
+
+    LP -.->|"하드웨어 신호 전파"| Pawn
+```
+
+---
+
+### ② 클래스별 소유 데이터 및 데이터 흐름 상의 역할
+
+#### 1. ULocalPlayer (물리 플레이어 접점)
+- **포함(소유)하고 있는 것:** `UEnhancedInputLocalPlayerSubsystem` 싱글톤 객체.
+- **데이터 흐름 상의 역할:**
+  - 마우스 조작, 키보드 타건 등 OS 및 엔진 하부에서 수신한 원시(Raw) 하드웨어 신호를 가장 먼저 수신하여 소유하고 있는 `Subsystem`으로 토스합니다.
+
+#### 2. UEnhancedInputLocalPlayerSubsystem (조작 모드 총괄자)
+- **포함(소유)하고 있는 것:** 현재 활성화(Add)된 `UInputMappingContext` (AMC) 목록 및 등록 우선순위(Priority) 테이블.
+- **데이터 흐름 상의 역할:**
+  - 하드웨어 신호가 감지되면, 현재 켜져 있는 AMC 목록들을 확인하여 해당 입력 키가 유효한 입력 규칙을 가지고 있는지 탐색을 시작합니다.
+
+#### 3. UInputMappingContext (조작 규칙 에셋)
+- **포함(소유)하고 있는 것:** 특정 키 $\leftrightarrow$ `UInputAction` 매핑 규칙 구조체, 그리고 각 매핑 구조체에 부착된 모디파이어(Modifiers) 및 트리거(Triggers) 배열.
+- **데이터 흐름 상의 역할:**
+  - 예를 들어 "W 키가 눌렸다"라는 정보가 오면, **"W 키는 `IA_Move`와 짝이며, 여기에는 값의 차원을 변환하는 Modifiers와 프레임당 가동하는 Triggers 조건이 설정되어 있다"**라는 규칙에 따라 입력 수치를 다듬어 `UInputAction`에 전달합니다.
+
+#### 4. UInputAction (최종 데이터 포맷 패키지)
+- **포함(소유)하고 있는 것:** 데이터의 출력 차원 규격(Boolean, Axis1D, Axis2D 등) 및 개별 임계값 설정.
+- **데이터 흐름 상의 역할:**
+  - AMC 단계를 거쳐 가공된 정형화 데이터와 발동 조건 판정 결과를 수용하여, C++에서 판독 가능한 **`FInputActionValue` 패키지**와 **`ETriggerEvent::Triggered` 등 상태 신호**를 최종 확정합니다.
+
+#### 5. UEnhancedInputComponent (델리게이트 스위칭 허브)
+- **포함(소유)하고 있는 것:** 폰의 `SetupPlayerInputComponent` 함수 오버라이딩 시 등록해 둔 `BindAction` 델리게이트 매핑 맵 (입력 액션 주소 $\leftrightarrow$ C++ 멤버 함수 주소).
+- **데이터 흐름 상의 역할:**
+  - `Subsystem` 측으로부터 "`IA_Move` 액션이 `Triggered` 되었고, 최종 파싱 값은 `(X: 1.0, Y: 0.0)`이다"라는 데이터 패키지를 전달받습니다.
+  - 자신이 소유한 델리게이트 맵에서 `IA_Move`에 연결된 캐릭터 클래스 멤버 함수(`AMyCharacter::Move`)를 찾아 호출하면서, 파싱 완료된 데이터 패키지를 매개변수로 넘겨주어 최종 게임플레이 무브먼트를 발동시킵니다.
+
+
 
 
