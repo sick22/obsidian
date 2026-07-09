@@ -32,6 +32,11 @@
 - 플레이어 컨트롤러 빙의(Possession) 제어 콜백(`PossessedBy`, `UnPossessed`) 활용 구조.
 - `EAutoReceiveInput::Player0` 지시어 지정을 활용한 비빙의 액터의 사용자 디바이스 입력 다이렉트 가로채기(Lever, Door 등 상호작용).
 
+### 📂 [언리얼 서브시스템 아키텍처 (Unreal Subsystems)](./subsystem.md)
+- `USubsystem` 클래스의 영속적 모듈 싱글톤 특징 및 5가지 생명 주기 분류 (`Engine`, `Editor`, `GameInstance`, `World`, `LocalPlayer`).
+- `GetSubsystem<T>()` API를 이용한 안전한 서브시스템 주소 쿼리 템플릿 문법.
+- 가비지 컬렉션(GC) 메모리 자동 해제 및 네트워크 복제(Replication) 제한 시의 데이터 동기화 베스트 프랙티스.
+
 ### 📂 [헤더 포함 최적화 및 전방 선언 (Include Optimization)](./include_optimization.md)
 - 헤더 파일(`.h`)에서의 **전방 선언(Forward Declaration)** 적용을 통한 전처리 파일 팽창 차단.
 - 소스 파일(`.cpp`) 구체 물리 include 구성을 통한 도미노 컴파일 방지 및 빌드 시간 단축 기법.
