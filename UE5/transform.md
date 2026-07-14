@@ -167,3 +167,47 @@ AddActorWorldRotation(RotationStep, false, nullptr, ETeleportType::None);
       GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
   }
   ```
+
+
+## 6. 캐릭터 무브먼트 및 물리 상태 쿼리 API
+
+### [ACharacter::GetCharacterMovement]
+- **핵심 목적:** 캐릭터 클래스(`ACharacter`) 내부의 이족보행 및 낙하 물리 연산을 전담 처리하는 `UCharacterMovementComponent` 객체의 주소를 획득하는 전용 인라인 게터(Getter) 함수입니다.
+- **파라미터 상세:**
+  - 없음 (인수 없이 호출).
+- **반환 값:**
+  - `UCharacterMovementComponent*`: 소유 중인 캐릭터 무브먼트 컴포넌트의 유효 포인터를 반환합니다.
+- **기술적 팁 (Technical Tips):**
+  - **캐스팅 불필요:** 캐릭터 클래스 내부에서 자체적으로 이미 적절한 컴포넌트 포인터 멤버를 캐싱해 둔 변수를 즉각 리턴하므로, `GetComponentByClass` 등 고비용 쿼리 함수를 사용할 필요 없이 바로 해당 포인터에 최속으로 접근이 가능합니다.
+- **코드 예시:**
+  ```cpp
+  UCharacterMovementComponent* MoveComp = MyCharacter->GetCharacterMovement();
+  ```
+
+### [UCharacterMovementComponent::IsFalling]
+- **핵심 목적:** 캐릭터 무브먼트 컴포넌트가 실시간 물리 연산을 수행할 때, 캐릭터의 서포트 상태(바닥과의 접촉 유무)를 감지하여 공중에 떠 있는(낙하 중인) 상태인지를 논리값으로 판단하는 쿼리 함수입니다.
+- **파라미터 상세:**
+  - 없음 (인수 없이 호출).
+- **반환 값:**
+  - `bool`: 캐릭터가 공중에 떠 있어 물리적 낙하 연산을 받는 상태이면 `true`, 지면 혹은 딛고 서 있는 플랫폼 위에 안정적으로 착지한 경우 `false`를 반환합니다.
+- **기술적 팁 (Technical Tips):**
+  - **애니메이션 상태 머신 연동:** 점프 루프 애니메이션 및 공중 체공 상태 전이 조건(IsFalling)을 애님 인스턴스(`UAnimInstance`)에서 감지하고 변환하는 핵심 전이 판단 정보로 주로 사용됩니다.
+  - **수동 상태 변경:** 중력 왜곡이나 수동 물리 조작 시 `SetMovementMode(MOVE_Falling)` 등을 통해 수동으로 낙하 상태를 인가할 수도 있습니다.
+- **코드 예시:**
+  ```cpp
+  bool bAirborne = GetCharacterMovement()->IsFalling();
+  ```
+
+### [AActor::GetVelocity]
+- **핵심 목적:** 해당 액터가 월드 공간에서 물리 및 가속 컴포넌트 연산을 통해 실제로 이동하고 있는 현재 델타 속도 벡터(Velocity Vector)를 구하는 실시간 속도 쿼리 함수입니다.
+- **파라미터 상세:**
+  - 없음 (인수 없이 호출).
+- **반환 값:**
+  - `FVector`: 초당 센티미터 단위(cm/s)의 속력을 내포한 3차원 물리 속도 벡터를 반환합니다.
+- **기술적 팁 (Technical Tips):**
+  - **2D 속력 추출 (Size2D):** 점프 등으로 Z축(상하) 낙하 속도가 커졌을 때 캐릭터의 순수 평면 걷기/뛰기 속도만을 분리해서 애니메이션 블렌드 스페이스에 입력하고 싶다면, `GetVelocity().Size()` 대신 높이 성분이 제거된 `GetVelocity().Size2D()` 함수를 활용하여 평면상의 가중 속력 수치만을 취득해야 애니메이션 블렌딩 오류를 유발하지 않습니다.
+- **코드 예시:**
+  ```cpp
+  FVector CurrentVelocity = GetVelocity();
+  float HorizontalSpeed = CurrentVelocity.Size2D(); // Z축을 소거한 수평 속력
+  ```
