@@ -454,3 +454,85 @@ graph TD
   ```cpp
   AddControllerPitchInput(LookAxisVector.Y);
   ```
+
+
+## 8. 애니메이션 인스턴스(AnimInstance) C++ 수명 주기 가이드
+
+### [UAnimInstance::NativeInitializeAnimation]
+- **핵심 목적:** 애니메이션 인스턴스가 활성화 및 초기화될 때 1회 호출되며, 컴포넌트나 소유자 액터의 캐싱 등 런타임 연산 최적화를 위한 사전 작업을 처리하는 가상 함수입니다.
+- **파라미터 상세:**
+  - 없음 (인수 없이 호출).
+- **반환 값:**
+  - 없음 (`void`)
+- **기술적 팁 (Technical Tips):**
+  - **캐싱 최적화:** 매 프레임 `TryGetPawnOwner()`를 호출하여 캐스팅하는 연산은 CPU 오버헤드를 유발하므로, 이 함수 내부에서 소유자 Pawn(또는 Character)의 포인터를 미리 캐스팅하여 멤버 변수로 캐싱해 두는 것이 권장됩니다.
+  - **안전한 포인터:** 초기화 시점에는 메쉬 컴포넌트가 액터에 완벽히 부착되지 않았거나 소유자 폰이 스폰 전일 수 있으므로 캐싱 시 반드시 `nullptr` 검사를 병행해야 합니다.
+- **코드 예시:**
+  ```cpp
+  // MyAnimInstance.h
+  #pragma once
+  #include "CoreMinimal.h"
+  #include "Animation/AnimInstance.h"
+  #include "MyAnimInstance.generated.h"
+
+  UCLASS()
+  class MYPROJECT_API UMyAnimInstance : public UAnimInstance
+  { 
+      GENERATED_BODY()
+  public:
+      virtual void NativeInitializeAnimation() override;
+      virtual void NativeUpdateAnimation(float DeltaSeconds) override;
+
+  protected:
+      UPROPERTY(BlueprintReadOnly, Category = "Character")
+      class ACharacter* OwnerCharacter;
+  };
+  ```
+
+### [UAnimInstance::NativeUpdateAnimation]
+- **핵심 목적:** 매 프레임 호출되며, 애님 그래프(AnimGraph)에 필요한 캐릭터 조작 수치(속도, 각도, 낙하 상태 등)를 소유자 액터로부터 동기화하여 실시간 변수를 갱신하는 틱(Tick) 성격의 가상 업데이트 함수입니다.
+- **파라미터 상세:**
+  - `float DeltaSeconds`: 프레임 간 델타 시간(초 단위 경과 시간)입니다.
+- **반환 값:**
+  - 없음 (`void`)
+- **기술적 팁 (Technical Tips):**
+  - **방어적 프로그래밍:** 초기화 단계에서 폰 캐싱에 실패했을 가능성이 있으므로, 매 프레임 멤버 포인터 변수의 유효성(`nullptr` 검사)을 반드시 사전에 검사한 후 비즈니스 로직을 동작시켜야 널 포인터 크래시를 방지할 수 있습니다.
+  - **스레드 세이프티:** UE 5.0 이상에서는 애니메이션 갱신 작업이 워커 스레드에서 비동기적(병렬)으로 처리되는 경우가 많으므로, 게임플레이 스레드에 상주하는 액터의 컴포넌트에 직접 접근하는 행위는 피하고, 스레드 안전하게 구조화된 데이터 복사 방식을 활용해야 합니다.
+- **코드 예시:**
+  ```cpp
+  // MyAnimInstance.cpp
+  #include "MyAnimInstance.h"
+  #include "GameFramework/Character.h"
+  #include "GameFramework/CharacterMovementComponent.h"
+
+  void UMyAnimInstance::NativeInitializeAnimation()
+  { 
+      Super::NativeInitializeAnimation();
+
+      // 소유자 캐릭터 포인터를 쿼리하여 캐싱
+      if (ACharacter* Char = Cast<ACharacter>(TryGetPawnOwner()))
+      { 
+          OwnerCharacter = Char;
+      }
+  }
+
+  void UMyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
+  { 
+      Super::NativeUpdateAnimation(DeltaSeconds);
+
+      // 캐싱된 포인터 유효성 검사
+      if (OwnerCharacter == nullptr)
+      { 
+          // 초기화 시점 실패 대비 재쿼리 시도
+          OwnerCharacter = Cast<ACharacter>(TryGetPawnOwner());
+      }
+
+      if (OwnerCharacter != nullptr)
+      { 
+          // 캐릭터 속도 및 공중 낙하 여부 갱신 예시
+          FVector Velocity = OwnerCharacter->GetVelocity();
+          float GroundSpeed = Velocity.Size2D();
+          bool bIsFalling = OwnerCharacter->GetCharacterMovement()->IsFalling();
+      }
+  }
+  ```
