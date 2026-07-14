@@ -111,8 +111,11 @@ AddActorWorldRotation(RotationStep, false, nullptr, ETeleportType::None);
 ### 기하학적 이동 방향 추출 메커니즘
 화면(카메라)이 지향하는 방향으로 캐릭터가 움직이게 하려면 회전 성분으로부터 방향 벡터를 추출하는 행렬 대수 연산이 내재됩니다.
 1. **Yaw 회전 행렬 구조:**
-   Yaw 단독 회전 $\theta 대한 3D 회전 행렬 {\text{yaw}}(\theta) 다음과 같이 월드 Z축을 기준으로 평면 성분을 정사영시킵니다.
-   9273R_{\text{yaw}}(\theta) = \begin{bmatrix} \cos\theta & -\sin\theta & 0 \\ \sin\theta & \cos\theta & 0 \\ 0 & 0 & 1 \end{bmatrix}9273
+   Yaw 단독 회전 $\theta$에 대한 3D 회전 행렬 $R_{\text{yaw}}(\theta)$는 다음과 같이 월드 Z축을 기준으로 평면 성분을 정사영시킵니다.
+   $$
+   R_{\text{yaw}}(\theta) = \begin{bmatrix} \cos\theta & -\sin\theta & 0 \\ \sin\theta & \cos\theta & 0 \\ 0 & 0 & 1 \end{bmatrix}
+   $$
 2. **단위 방향 벡터 유도:**
    - **X축 성분 (전방 벡터):** 회전 행렬의 첫 번째 열(Column)에 대응하며, 이는 월드 공간에서 캐릭터가 바라봐야 할 전방 1단위 크기의 기하학적 방향 벡터(`EAxis::X`)와 완벽히 일치합니다.
    - **Y축 성분 (우측 벡터):** 회전 행렬의 두 번째 열에 대응하며, 캐릭터 시선 기준에서 직교하는 우측 방향 벡터(`EAxis::Y`)를 매칭합니다.
+
