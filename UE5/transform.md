@@ -119,3 +119,51 @@ AddActorWorldRotation(RotationStep, false, nullptr, ETeleportType::None);
    - **X축 성분 (전방 벡터):** 회전 행렬의 첫 번째 열(Column)에 대응하며, 이는 월드 공간에서 캐릭터가 바라봐야 할 전방 1단위 크기의 기하학적 방향 벡터(`EAxis::X`)와 완벽히 일치합니다.
    - **Y축 성분 (우측 벡터):** 회전 행렬의 두 번째 열에 대응하며, 캐릭터 시선 기준에서 직교하는 우측 방향 벡터(`EAxis::Y`)를 매칭합니다.
 
+
+
+## 5. bUseControllerRotation과 bOrientRotationToMovement 회전 설정
+
+### [bUseControllerRotation (Yaw / Pitch / Roll)]
+- **핵심 목적:** 폰(Pawn)의 월드 회전을 플레이어 컨트롤러의 조준 각도(Control Rotation)에 동적으로 직접 동기화시킬 것인지 제어하는 설정 변수입니다.
+- **변수 상세 및 기능:**
+  - `bUseControllerRotationYaw`: `true`인 경우 컨트롤러 좌우 각도 회전과 캐릭터 본체의 Yaw 각도를 완전히 일치시킵니다.
+  - `bUseControllerRotationPitch`: `true`인 경우 컨트롤러 상하 각도에 맞춰 캐릭터 본체를 상하 회전시킵니다 (일반 이족보행 캐릭터는 전복을 방지하기 위해 `false`로 고정합니다).
+  - `bUseControllerRotationRoll`: `true`인 경우 컨트롤러 롤 각도에 따라 캐릭터 본체를 기울입니다.
+- **동작 제어 패턴:**
+  - `true`: 캐릭터가 상시 컨트롤러 정면 방향(보통 카메라 방향)을 1대1로 응시하며 움직입니다 (예: FPS 게임, TPS 백뷰).
+  - `false`: 시선 각도와 관계없이 캐릭터 본체는 자유로운 회전 상태를 유지합니다.
+- **기술적 팁 (Technical Tips):**
+  - 이 변수들을 `false`로 지정하고, 스프링 암 컴포넌트(`USpringArmComponent`)의 `bUsePawnControlRotation = true` 설정을 조절하면 카메라만 폰 주변을 공회전하는 3인칭 프리 카메라 구조를 구현할 수 있습니다.
+- **코드 예시:**
+  ```cpp
+  bUseControllerRotationYaw = true;
+  bUseControllerRotationPitch = false;
+  bUseControllerRotationRoll = false;
+  ```
+
+### [UCharacterMovementComponent::bOrientRotationToMovement]
+- **핵심 목적:** 캐릭터가 현재 조이스틱이나 키보드로 가속(이동 입력)하려는 지향 방향으로 본체 회전을 부드럽게 정렬시켜 주는 움직임 컴포넌트의 기능 옵션입니다.
+- **변수 상세 및 기능:**
+  - `bOrientRotationToMovement`: 캐릭터 무브먼트 컴포넌트 소속의 불리언 변수입니다.
+- **동작 제어 패턴:**
+  - `true`: 플레이어의 키 입력 벡터(예: W/S/A/D 입력 결과물인 가속 벡터 방향)로 몸체의 정면이 자동 회전 정렬됩니다. 회전하는 물리적 지연 속도는 무브먼트 컴포넌트의 `RotationRate` 설정값을 추종합니다.
+  - `false`: 이동 입력 방향과 폰 회전 방향이 기하학적으로 연동되지 않습니다.
+- **기술적 팁 (Technical Tips):**
+  - **상충 현상 방지:** 이 속성이 활성화되려면 반드시 부모 액터의 `bUseControllerRotationYaw`가 `false` 상태여야만 합니다. 액터가 컨트롤러 방향을 강제 추종하면 가속도 방향 회전 연산이 덮어쓰여져 무효화되기 때문입니다.
+  - **회전 속도 설정:** 부드럽고 시각적으로 자연스러운 턴 애니메이션을 연출하려면 `RotationRate`(초당 각도 제한) 조정을 병행해 주어야 합니다.
+- **코드 예시:**
+  ```cpp
+  #include "GameFramework/CharacterMovementComponent.h"
+
+  AMyCharacter::AMyCharacter()
+  { 
+      // 1. 컨트롤러 회전 추종을 차단하여 몸 회전 자율권 획득
+      bUseControllerRotationYaw = false;
+
+      // 2. 가속 입력 방향으로 몸 정면 자동 회전 활성화
+      GetCharacterMovement()->bOrientRotationToMovement = true;
+
+      // 3. 회전 감도 조율 (Yaw 기준 초당 540도 회전)
+      GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
+  }
+  ```
