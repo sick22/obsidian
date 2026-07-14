@@ -186,3 +186,54 @@ AMyActor::AMyActor()
 ```
 
 
+
+
+## 8. CreateDefaultSubobject API 상세 분석
+
+### [CreateDefaultSubobject]
+- **핵심 목적:** 액터(Actor) 또는 UObject의 C++ 생성자(Constructor) 단계에서 하위 컴포넌트(Subobject)를 인스턴스화하고 이를 클래스 기본 객체(CDO, Class Default Object)의 멤버 템플릿으로 등록하는 팩토리 함수입니다.
+- **파라미터 상세:**
+  - `FName SubobjectName`: 액터 내에서 고유해야 하는 컴포넌트의 이름 식별자입니다. 에디터 디테일 패널 및 리플렉션 시스템에서 이 컴포넌트를 구별하는 키로 사용됩니다.
+  - `bool bTransient`: (선택적 파라미터) 컴포넌트를 휘발성(Transient)으로 지정하여 세이브/로드 시 시리얼라이즈 대상에서 제외할지 결정합니다.
+- **반환 값:**
+  - `TReturnType*`: 생성된 컴포넌트 인스턴스의 템플릿 타입 포인터를 반환합니다.
+- **기술적 팁 (Technical Tips):**
+  - **생성자 내부 전용:** 이 함수는 반드시 클래스 생성자(Constructor) 블록 내부에서만 호출해야 합니다. `BeginPlay()`나 `Tick()`과 같은 런타임 수명 주기 도중에 호출하면 엔진 내부에서 즉각 어설션 오류(Assertion Fail) 및 크래시를 유발합니다. 런타임에 동적으로 컴포넌트를 생성해야 할 경우에는 `NewObject<T>()`와 `RegisterComponent()`를 조합하여 구현해야 합니다.
+  - **이름 고유성:** 동일한 액터 내에서 중복된 `SubobjectName`을 사용하면 런타임 초기화 단계에서 에러가 발생하거나 널 포인터가 할당되는 치명적인 문제가 발생하므로 이름 정의 시 고유성이 엄격히 보장되어야 합니다.
+- **코드 예시:**
+  ```cpp
+  // MyActor.h
+  #pragma once
+  #include "CoreMinimal.h"
+  #include "GameFramework/Actor.h"
+  #include "MyActor.generated.h"
+
+  UCLASS()
+  class MYPROJECT_API AMyActor : public AActor
+  { 
+      GENERATED_BODY()
+  public:
+      AMyActor();
+
+  protected:
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+      class USceneComponent* DefaultRoot;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+      class UStaticMeshComponent* MeshComponent;
+  };
+
+  // MyActor.cpp
+  #include "MyActor.h"
+  #include "Components/SceneComponent.h"
+  #include "Components/StaticMeshComponent.h"
+
+  AMyActor::AMyActor()
+  { 
+      DefaultRoot = CreateDefaultSubobject<USceneComponent>(TEXT("DefaultRootComponent"));
+      RootComponent = DefaultRoot;
+
+      MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComponent"));
+      MeshComponent->SetupAttachment(RootComponent);
+  }
+  ```
