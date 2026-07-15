@@ -237,3 +237,41 @@ AMyActor::AMyActor()
       MeshComponent->SetupAttachment(RootComponent);
   }
   ```
+
+
+## 9. 언리얼 엔진 충돌(Collision) 시스템과 C++ 설정
+
+### [UPrimitiveComponent::SetCollisionEnabled]
+- **핵심 목적:** 컴포넌트의 충돌 검사 수준(비활성, 쿼리 전용, 물리 시뮬레이션 전용, 전체 활성)을 설정하여 런타임 물리 연산의 동작 모드를 결정합니다.
+- **파라미터 상세:**
+  - `ECollisionEnabled::Type NewType`: 설정할 충돌 상태 열거형 값입니다.
+    - `NoCollision`: 충돌 쿼리 및 물리 연산을 모두 비활성화합니다.
+    - `QueryOnly`: 레이캐스트, 스윕, 오버랩 등 논리적인 충돌 탐지(쿼리)만 수행하고 물리적 충격력은 주지 않습니다.
+    - `PhysicsOnly`: 리지드 바디 강체 충돌 및 밀어내기 등 물리적 시뮬레이션 연산만 수행합니다.
+    - `QueryAndPhysics`: 쿼리 탐지 및 물리 강체 연산을 병행하여 모두 활성화합니다.
+- **반환 값:**
+  - 없음 (`void`)
+- **기술적 팁 (Technical Tips):**
+  - **오버헤드 방지:** 아이템 획득 트리거 범위나 구역 진입 트리거 볼륨처럼 캐릭터를 가로막지 않고 오직 겹침 이벤트 감지만 필요한 컴포넌트는 반드시 `QueryOnly`로 지정해야 불필요한 리지드 바디 물리 강체 연산 오버헤드를 아낄 수 있습니다.
+- **코드 예시:**
+  ```cpp
+  CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+  ```
+
+### [UPrimitiveComponent::SetCollisionResponseToChannel]
+- **핵심 목적:** 지정된 충돌 채널(Object 또는 Trace)에 대하여 이 컴포넌트가 대항해 보여줄 충돌 응답 종류(무시, 겹침, 차단)를 개별 제어합니다.
+- **파라미터 상세:**
+  - `ECollisionChannel Channel`: 타겟 충돌 채널 플래그입니다 (`ECC_Pawn`, `ECC_WorldStatic`, `ECC_Visibility` 등).
+  - `ECollisionResponse NewResponse`: 해당 채널을 충돌 시 만났을 때 가동할 응답 형태 값입니다.
+    - `ECR_Ignore`: 충돌 감지 및 물리 작용을 완전히 생략하고 통과합니다.
+    - `ECR_Overlap`: 관통하되 시작/종료 순간 겹침 델리게이트 이벤트(`OnComponentBeginOverlap` 등)를 트리거합니다.
+    - `ECR_Block`: 물리적 관통을 차단하여 액터를 밀어내고, 부딪히는 순간 충돌 이벤트(`OnComponentHit`)를 트리거합니다.
+- **반환 값:**
+  - 없음 (`void`)
+- **기술적 팁 (Technical Tips):**
+  - **양방향 판정 대칭성:** 월드 상에서 두 컴포넌트가 접촉했을 때 결정되는 최종 충돌 반응은 **두 객체가 각 채널에 지정한 응답값 중 가장 보수적인(약한) 반응**을 따릅니다. 예를 들어 한쪽이 `Block` 설정을 했더라도 상대편이 `Overlap` 설정이면 최종 물리 동작은 통과하며 겹침을 검사하는 `Overlap`으로 정렬됩니다.
+- **코드 예시:**
+  ```cpp
+  // 이 컴포넌트가 Pawn(플레이어/AI)을 만나면 막아서지 않고 관통하되, 진입 이벤트만 감지하도록 지정
+  CollisionComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+  ```
