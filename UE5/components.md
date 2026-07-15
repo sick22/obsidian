@@ -239,39 +239,34 @@ AMyActor::AMyActor()
   ```
 
 
-## 9. 언리얼 엔진 충돌(Collision) 시스템과 C++ 설정
+## 9. 언리얼 에디터 콜리젼(Collision) 설정 및 필터링
 
-### [UPrimitiveComponent::SetCollisionEnabled]
-- **핵심 목적:** 컴포넌트의 충돌 검사 수준(비활성, 쿼리 전용, 물리 시뮬레이션 전용, 전체 활성)을 설정하여 런타임 물리 연산의 동작 모드를 결정합니다.
-- **파라미터 상세:**
-  - `ECollisionEnabled::Type NewType`: 설정할 충돌 상태 열거형 값입니다.
-    - `NoCollision`: 충돌 쿼리 및 물리 연산을 모두 비활성화합니다.
-    - `QueryOnly`: 레이캐스트, 스윕, 오버랩 등 논리적인 충돌 탐지(쿼리)만 수행하고 물리적 충격력은 주지 않습니다.
-    - `PhysicsOnly`: 리지드 바디 강체 충돌 및 밀어내기 등 물리적 시뮬레이션 연산만 수행합니다.
-    - `QueryAndPhysics`: 쿼리 탐지 및 물리 강체 연산을 병행하여 모두 활성화합니다.
-- **반환 값:**
-  - 없음 (`void`)
+### [Collision Presets (콜리젼 프리셋)]
+- **핵심 목적:** 복잡한 충돌 반응 테이블 설정을 템플릿화하여, 에디터 상에서 여러 컴포넌트에 동일한 물리 규칙을 쉽고 일관되게 적용할 수 있게 해주는 기능입니다.
+- **설정 및 구성 세부:**
+  - **Collision Enabled (콜리젼 활성화 옵션):** 
+    - `No Collision`: 충돌 및 쿼리 모두 비활성화합니다.
+    - `Query Only (No Physics Collision)`: 오버랩, 스윕, 레이캐스트 감지만 활성화합니다.
+    - `Physics Only (No Query Collision)`: 강체 물리 충돌 밀어내기만 활성화합니다.
+    - `Collision Enabled (Query and Physics)`: 쿼리 감지 및 물리 밀어내기를 모두 활성화합니다.
+  - **Object Type (오브젝트 타입):** 해당 컴포넌트의 기하학적 신원 분류를 지정합니다.
 - **기술적 팁 (Technical Tips):**
-  - **오버헤드 방지:** 아이템 획득 트리거 범위나 구역 진입 트리거 볼륨처럼 캐릭터를 가로막지 않고 오직 겹침 이벤트 감지만 필요한 컴포넌트는 반드시 `QueryOnly`로 지정해야 불필요한 리지드 바디 물리 강체 연산 오버헤드를 아낄 수 있습니다.
-- **코드 예시:**
-  ```cpp
-  CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-  ```
+  - 기본 제공 프리셋(예: `BlockAll`, `OverlapAll`, `Pawn`, `CharacterMesh` 등) 외에도 **Project Settings -> Engine -> Collision**에서 프로젝트 전용 커스텀 프리셋을 새로 생성하여 관리할 수 있습니다.
+  - 에디터 상에서 프리셋을 `Custom`으로 변경하면 채널별 테이블을 개별적으로 수정(Ignore/Overlap/Block)할 수 있는 편집 상태로 전환됩니다.
 
-### [UPrimitiveComponent::SetCollisionResponseToChannel]
-- **핵심 목적:** 지정된 충돌 채널(Object 또는 Trace)에 대하여 이 컴포넌트가 대항해 보여줄 충돌 응답 종류(무시, 겹침, 차단)를 개별 제어합니다.
-- **파라미터 상세:**
-  - `ECollisionChannel Channel`: 타겟 충돌 채널 플래그입니다 (`ECC_Pawn`, `ECC_WorldStatic`, `ECC_Visibility` 등).
-  - `ECollisionResponse NewResponse`: 해당 채널을 충돌 시 만났을 때 가동할 응답 형태 값입니다.
-    - `ECR_Ignore`: 충돌 감지 및 물리 작용을 완전히 생략하고 통과합니다.
-    - `ECR_Overlap`: 관통하되 시작/종료 순간 겹침 델리게이트 이벤트(`OnComponentBeginOverlap` 등)를 트리거합니다.
-    - `ECR_Block`: 물리적 관통을 차단하여 액터를 밀어내고, 부딪히는 순간 충돌 이벤트(`OnComponentHit`)를 트리거합니다.
-- **반환 값:**
-  - 없음 (`void`)
+### [Trace Channels vs Object Channels (트레이스 및 오브젝트 채널)]
+- **핵심 목적:** 충돌 필터링 검사를 수행할 때, 광선 검사(Query) 기준선과 충돌체(Object)의 대상을 정교하게 구분하는 채널링 시스템입니다.
+- **설정 및 구성 세부:**
+  - **Object Channels (오브젝트 채널):** 물리 공간을 차지하는 실제 충돌체들을 성격별로 정의합니다. (기본 제공: `WorldStatic`, `WorldDynamic`, `Pawn`, `PhysicsBody`, `Vehicle`, `Destructible`)
+  - **Trace Channels (트레이스 채널):** Line Trace나 Sweep 등 가상의 테스트 레이가 충돌체를 식별하는 데 사용하는 기준선입니다. (기본 제공: `Visibility`, `Camera`)
 - **기술적 팁 (Technical Tips):**
-  - **양방향 판정 대칭성:** 월드 상에서 두 컴포넌트가 접촉했을 때 결정되는 최종 충돌 반응은 **두 객체가 각 채널에 지정한 응답값 중 가장 보수적인(약한) 반응**을 따릅니다. 예를 들어 한쪽이 `Block` 설정을 했더라도 상대편이 `Overlap` 설정이면 최종 물리 동작은 통과하며 겹침을 검사하는 `Overlap`으로 정렬됩니다.
-- **코드 예시:**
-  ```cpp
-  // 이 컴포넌트가 Pawn(플레이어/AI)을 만나면 막아서지 않고 관통하되, 진입 이벤트만 감지하도록 지정
-  CollisionComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-  ```
+  - 예를 들어 엄폐물 뒤의 플레이어를 조준할 때, 시각적으로는 보이므로 `Visibility` 채널은 통과(Ignore/Overlap)하고 카메라 뷰는 막아야 한다면, 카메라 콜리전 트레이스 채널을 `Block`으로 두고 시각 광선 검사용 트레이스 채널을 다르게 세팅해야 합니다.
+  - 새로운 게임 조작(예: 투척 무기 궤적 검사 등)이 필요하면 세팅 메뉴에서 커스텀 트레이스 채널을 신설할 수 있습니다.
+
+### [Collision Responses (충돌 반응 필터링)]
+- **핵심 목적:** 컴포넌트와 특정 채널이 조우했을 때의 기하학적 억제 및 이벤트 트리거 양상을 결정합니다.
+- **동작 반응 및 제어 규칙:**
+  - **Ignore (무시):** 아무것도 감지하지 않고 관통하며 이벤트도 생성하지 않습니다 (CPU 연산 최소화).
+  - **Overlap (겹침):** 막지 않고 관통하지만, 두 물체가 교차하기 시작하거나 완전히 떨어질 때 오버랩 이벤트(`On Component Begin/End Overlap`)를 감지해 게임 로직(아이템 습득, 포털 작동 등)을 수행합니다.
+  - **Block (차단):** 물리적으로 통과하지 못하도록 차단하여 강체 물리 충돌을 처리하며, 타격 시 히트 이벤트(`On Component Hit`)를 트리거할 수 있습니다.
+
