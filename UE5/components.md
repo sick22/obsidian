@@ -270,3 +270,71 @@ AMyActor::AMyActor()
   - **Overlap (겹침):** 막지 않고 관통하지만, 두 물체가 교차하기 시작하거나 완전히 떨어질 때 오버랩 이벤트(`On Component Begin/End Overlap`)를 감지해 게임 로직(아이템 습득, 포털 작동 등)을 수행합니다.
   - **Block (차단):** 물리적으로 통과하지 못하도록 차단하여 강체 물리 충돌을 처리하며, 타격 시 히트 이벤트(`On Component Hit`)를 트리거할 수 있습니다.
 
+
+
+## 10. UPrimitiveComponent 겹침(Overlap) 이벤트 델리게이트
+
+### [UPrimitiveComponent::OnComponentBeginOverlap]
+- **핵심 목적:** 프리미티브 컴포넌트(`UPrimitiveComponent`)의 물리 겹침(Overlap) 탐지 영역 안으로 다른 충돌체가 진입하여 오버랩 상태가 성립되었을 때, 바인딩된 C++ 콜백 멤버 함수 및 블루프린트 노드를 순차적으로 호출하여 일괄 전파하는 다이내믹 멀티캐스트 델리게이트입니다.
+- **파라미터 상세 (바인딩 대상 콜백 함수의 6대 매개변수 시그니처):**
+  - `UPrimitiveComponent* OverlappedComponent`: 이벤트를 감지하여 발생시킨 본체 소유의 프리미티브 컴포넌트 포인터입니다.
+  - `AActor* OtherActor`: 감지 구역 안으로 진입하여 오버랩 상태를 개시한 상대방 액터 객체의 포인터입니다.
+  - `UPrimitiveComponent* OtherComp`: 겹침을 실질적으로 유발한 상대방 소유의 세부 피지컬 컴포넌트 주소입니다.
+  - `int32 OtherBodyIndex`: 피직스 스켈레탈 애셋이나 복합 물리 폰에서 충돌을 유발한 상대방 물리 본(Bone) 혹은 강체 바디의 인덱스 식별 번호입니다.
+  - `bool bFromSweep`: 텔레포트처럼 위치를 덮어씌운 것이 아니라, 프레임 이동 감지 스윕(`Sweep`) 탐지 연산에 의해 물리적으로 교차 돌파가 발생했는지 여부입니다.
+  - `const FHitResult& SweepResult`: 스윕이 참(`true`)일 때의 충돌 접점 좌표 및 노멀 등 물리적인 상호 피격 데이터가 내포된 히트 결과 구조체 참조 레퍼런스입니다.
+- **반환 값:**
+  - 없음 (이벤트 발생 통지용).
+- **기술적 팁 (Technical Tips):**
+  - **UFUNCTION 데코레이터 및 시그니처 정렬:** `AddDynamic` 매크로로 등록할 콜백 타겟 C++ 멤버 함수 위에는 반드시 `UFUNCTION()` 매크로 데코레이터가 기재되어야 런타임 리플렉션 탐색 시 실패하지 않으며, 6개의 매개변수 타입 시그니처와 매핑 순서가 완벽히 일치해야 빌드 오류 및 런타임 크래시를 방지할 수 있습니다.
+  - **물리 옵션 선결 조건:** 겹침 이벤트가 비즈니스 영역에서 정상 호출되려면, 충돌 컴포넌트의 콜리전 설정 상태(Collision Enabled)가 `QueryOnly` 또는 `QueryAndPhysics` 상태여야 하고, 동시에 **bGenerateOverlapEvents** 속성 플래그가 `true`로 인가되어 있어야 합니다.
+- **코드 예시:**
+  ```cpp
+  // MyActor.h
+  #pragma once
+  #include "CoreMinimal.h"
+  #include "GameFramework/Actor.h"
+  #include "MyActor.generated.h"
+
+  UCLASS()
+  class MYPROJECT_API AMyActor : public AActor
+  { 
+      GENERATED_BODY()
+  public:
+      AMyActor();
+
+  protected:
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+      class USphereComponent* TriggerSphere;
+
+      // 델리게이트에 바인딩할 콜백 함수 선언 (UFUNCTION 필수)
+      UFUNCTION()
+      void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+  };
+
+  // MyActor.cpp
+  #include "MyActor.h"
+  #include "Components/SphereComponent.h"
+
+  AMyActor::AMyActor()
+  { 
+      TriggerSphere = CreateDefaultSubobject<USphereComponent>(TEXT("TriggerSphereComponent"));
+      RootComponent = TriggerSphere;
+
+      // 겹침 검출을 위한 필수 기하학적 물리 세팅
+      TriggerSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+      TriggerSphere->SetCollisionResponseToAllChannels(ECR_Overlap);
+      TriggerSphere->bGenerateOverlapEvents = true;
+
+      // 다이내믹 멀티캐스트 델리게이트에 함수 바인딩
+      TriggerSphere->OnComponentBeginOverlap.AddDynamic(this, &AMyActor::OnOverlapBegin);
+  }
+
+  void AMyActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+  { 
+      if (OtherActor && (OtherActor != this))
+      { 
+          // 상대방 액터 검출 이후 동작 로직 처리
+      }
+  }
+  ```
