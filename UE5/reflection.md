@@ -151,3 +151,111 @@ public:
     virtual bool CanSprint_Implementation(); // C++ 본문 구현용 선언
 };
 ```
+
+
+## 4. 언리얼 델리게이트(Delegates) 시스템
+
+### [DECLARE_DYNAMIC_MULTICAST_DELEGATE]
+- **핵심 목적:** 여러 개의 `UFUNCTION` 콜백 함수를 등록하고 한 번에 알림을 보낼 수 있으며, 블루프린트 에디터 상에서 이벤트 디스패처(Event Dispatcher)로 직접 바인딩하여 제어할 수 있는 리플렉션 지원 멀티캐스트 델리게이트를 선언하는 매크로입니다.
+- **파라미터 상세 (선언부 매크로 인자):**
+  - `DelegateName`: 선언할 델리게이트 클래스의 고유 형식 명칭입니다 (관례상 `F` 접두사 사용).
+  - `ParamType, ParamName` (`_OneParam` 이상 매크로 사용 시): 전달할 파라미터의 데이터 타입과 명칭입니다. 다이내믹 계열은 컴파일러가 리플렉션을 통해 블루프린트 핀 이름으로 자동 매핑하므로 매개변수 이름을 명시적으로 기입해야 합니다.
+- **반환 값:**
+  - 없음 (선언형 매크로).
+- **기술적 팁 (Technical Tips):**
+  - **UFUNCTION 제약:** 다이내믹 델리게이트에 바인딩할 C++ 멤버 함수는 리플렉션 시스템이 함수 형식을 식별할 수 있도록 반드시 `UFUNCTION()` 매크로를 함수 헤더 선언문 위에 선언해야 합니다. 그렇지 않으면 런타임 바인딩 시 바인딩 오류(Null binding)가 발생합니다.
+  - **직렬화 성능:** 다이내믹 델리게이트는 함수 이름을 문자열로 직렬화하여 리플렉션 룩업을 수행하므로, 블루프린트 연동이 필요 없고 C++ 내부에서만 가동하는 이벤트 연산이라면 일반 C++ 델리게이트(`DECLARE_MULTICAST_DELEGATE`)를 사용하는 것이 성능상 훨씬 유리합니다.
+- **코드 예시:**
+  ```cpp
+  // 1. 헤더 영역에서 델리게이트 타입 선언 (세미콜론 없음)
+  DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChangedSignature, float, NewHealth);
+
+  UCLASS()
+  class AMyCharacter : public ACharacter
+  {
+      GENERATED_BODY()
+  public:
+      // 2. 클래스 내부에서 UPROPERTY 멤버 변수로 인스턴스 선언 (BlueprintAssignable 필수)
+      UPROPERTY(BlueprintAssignable, Category = "Events")
+      FOnHealthChangedSignature OnHealthChanged;
+  };
+  ```
+
+### [Broadcast]
+- **핵심 목적:** 델리게이트 인스턴스에 현재까지 바인딩되어 유효하게 연결된 모든 대상 리스너(Listener) 객체들의 C++ 콜백 멤버 함수 및 블루프린트 이벤트를 순차적으로 호출하여 일괄 실행(전파)합니다.
+- **파라미터 상세:**
+  - `Args...`: 델리게이트 선언부에서 정의한 파라미터 규격에 부합하는 가중 데이터 인수들입니다.
+- **반환 값:**
+  - 없음 (`void` - 멀티캐스트는 다수 리스너의 복수 실행이 일어날 수 있어 반환 타입을 가질 수 없습니다).
+- **기술적 팁 (Technical Tips):**
+  - **유효성 루프 처리:** 멀티캐스트의 `Broadcast()`는 내부적으로 가동 시 바인딩된 리스너 목록을 순회하며 유효성을 자체 검증하므로, 싱글캐스트의 `Execute()`와 달리 사전에 바인딩 여부를 판별하는 유효성 체크(`IsBound()`) 분기문을 명시적으로 구현하지 않아도 안전하게 가동됩니다.
+- **코드 예시:**
+  ```cpp
+  // 피격 처리 함수 내부
+  void AMyCharacter::ApplyDamage(float DamageAmount)
+  {
+      CurrentHealth = FMath::Max(0.f, CurrentHealth - DamageAmount);
+      
+      // 바인딩된 모든 구독자에게 건강 수치 변경 알림 전파
+      OnHealthChanged.Broadcast(CurrentHealth);
+  }
+  ```
+
+
+## 5. 언리얼 델리게이트 종류 및 바인딩 API
+
+### 델리게이트 4대 분류 체계
+1. **싱글캐스트 델리게이트 (Single-cast Delegate)**: 단 하나의 함수만 바인딩 가능하며, 값을 반환받을 수 있습니다.
+2. **멀티캐스트 델리게이트 (Multi-cast Delegate)**: 여러 개의 함수를 바인딩하여 동시 전파할 수 있으나 반환값은 가질 수 없습니다.
+3. **다이내믹 싱글캐스트 델리게이트 (Dynamic Single-cast Delegate)**: 리플렉션과 직렬화를 지원하여 블루프린트 노출이 가능하며 단일 함수를 바인딩합니다.
+4. **다이내믹 멀티캐스트 델리게이트 (Dynamic Multi-cast Delegate)**: 여러 함수를 동시 바인딩하며 블루프린트의 '이벤트 디스패처(Event Dispatcher)'로 직결 매핑됩니다.
+
+---
+
+### [UObject 기반 C++ 델리게이트 바인딩 (BindUObject / AddUObject)]
+- **핵심 목적:** 리플렉션 시스템에 의해 수명 주기 관리를 받는 `UObject` 파생 객체의 멤버 함수를 델리게이트에 안전하게 연결합니다. 싱글캐스트 계열은 `BindUObject`, 멀티캐스트 계열은 `AddUObject`를 사용합니다.
+- **파라미터 상세:**
+  - `UserObject` (`UObject*`): 콜백을 수행할 대상 `UObject` 포인터 주소(일반적으로 `this`)입니다.
+  - `InFunc` (멤버 함수 주소): 조건 충족 시 작동시킬 멤버 함수의 주소입니다 (`&AMyClass::MyCallback` 형태).
+- **반환 값:**
+  - 싱글캐스트: 없음 (`void`)
+  - 멀티캐스트: `FDelegateHandle` (추후 개별 구독 해제 처리를 위해 발급하는 식별용 핸들 구조체).
+- **기술적 팁 (Technical Tips):**
+  - **가비지 컬렉션(GC) 연동 안전성:** 바인딩된 대상 `UObject`가 소멸되거나 가비지 컬렉터에 의해 지워지면, 델리게이트는 런타임에 이를 스스로 감지하여 실행하지 않고 안전하게 Skip합니다. 따라서 포인터 오류로 인한 크래시를 원천 예방합니다.
+- **코드 예시:**
+  ```cpp
+  // 싱글캐스트
+  MySingleDelegate.BindUObject(this, &AMyCharacter::OnActionTriggered);
+
+  // 멀티캐스트
+  FDelegateHandle Handle = MyMulticastDelegate.AddUObject(this, &AMyCharacter::OnEventTriggered);
+  ```
+
+### [다이내믹 델리게이트 바인딩 (BindDynamic / AddDynamic)]
+- **핵심 목적:** 리플렉션 및 직렬화를 지원하여 블루프린트 노출이 가능한 다이내믹 델리게이트에 함수를 등록합니다. 싱글캐스트는 `BindDynamic`, 멀티캐스트는 `AddDynamic` 매크로 래퍼를 사용합니다.
+- **파라미터 상세:**
+  - `UserObject` (`UObject*`): 바인딩 대상인 `UObject` 포인터입니다.
+  - `FuncName` (멤버 함수 주소): `UFUNCTION()` 데코레이터가 선언된 멤버 함수의 메모리 주소입니다.
+- **반환 값:**
+  - 없음 (`void`)
+- **기술적 팁 (Technical Tips):**
+  - **UFUNCTION 데코레이션 필수:** 다이내믹 델리게이트는 런타임에 리플렉션 허브를 통해 함수 이름을 문자열로 찾으므로, 바인딩 대상 함수는 반드시 `UFUNCTION()` 매크로를 선언해야 합니다. 누락 시 컴파일러 검사를 통과하더라도 런타임에 바인딩 에러가 발생합니다.
+- **코드 예시:**
+  ```cpp
+  // 다이내믹 멀티캐스트 델리게이트 바인딩 (블루프린트 이벤트 디스패처 대응)
+  OnHealthChanged.AddDynamic(this, &AMyCharacter::HandleHealthChanged);
+  ```
+
+### [ExecuteIfBound]
+- **핵심 목적:** 싱글캐스트 델리게이트가 유효한 콜백 함수를 정상 참조 중인 상황인지 검사하고, 유효한 경우에만 안전하게 실행 연산을 처리합니다.
+- **파라미터 상세:**
+  - `Args...`: 델리게이트 선언 구조에 매핑되는 매개변수 인수 데이터 목록입니다.
+- **반환 값:**
+  - 없음 (`void`)
+- **기술적 팁 (Technical Tips):**
+  - 싱글캐스트 델리게이트를 `Execute()` 함수로 무조건 작동시키는 경우, 만약 바인딩이 비어 있는 비활성 상태라면 즉시 어설션 에러로 크래시를 동반합니다. 따라서 명시적 `IsBound()` 검사를 수행하거나 본 안전 함수 `ExecuteIfBound()`를 사용하는 것이 관용적입니다.
+- **코드 예시:**
+  ```cpp
+  // 싱글캐스트 안전 실행
+  MySingleDelegate.ExecuteIfBound(DamageAmount);
+  ```
