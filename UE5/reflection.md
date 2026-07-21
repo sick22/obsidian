@@ -259,3 +259,77 @@ public:
   // 싱글캐스트 안전 실행
   MySingleDelegate.ExecuteIfBound(DamageAmount);
   ```
+
+
+## 6. UENUM() 매크로 및 언리얼 Enum State 관리
+
+### [UENUM(BlueprintType)]
+- **핵심 목적:** C++의 범위 지정 열거형(`enum class`)을 언리얼 엔진 리플렉션 시스템(UHT)에 등록하여 에디터 디테일 패널, 블루프린트 변수 타입, 애니메이션 애님 그래프(AnimGraph) 상태 전이 노드에서 사용할 수 있도록 래핑하는 매크로입니다.
+- **구문 사양 및 메타 지정자:**
+  - `BlueprintType`: 블루프린트에서 이 열거형 타입의 변수를 선언하고 핀(Pin)으로 주고받을 수 있도록 허용합니다.
+  - `enum class EStateName : uint8`: 언리얼 C++ 규격상 열거형의 기반 데이터 타입(Underlying Type)은 반드시 `uint8`로 지정해야 블루프린트 호환성 및 네트워크 복제(Replication) 바이트 최적화가 보장됩니다.
+  - `UMETA(DisplayName = "표시 이름")`: 에디터 드롭다운 및 노드에서 표시될 가독성 좋은 명칭을 라벨링합니다.
+- **반환 값 / 타입:**
+  - `enum class` 타입 정의.
+- **기술적 팁 (Technical Tips):**
+  - **열거형 항목 수 자동 관리 (`MAX` 항목):** 관례적으로 열거형의 마지막 요소에 `MAX UMETA(Hidden)`을 배치하여 열거형 요소의 총 개수를 쿼리하거나 배열 크기를 할당할 때 유용하게 활용합니다.
+  - **UEnum 클래스 헬퍼 함수 활용:** `UEnum::GetValueAsString()` 또는 `StaticEnum<T>()`를 사용하여 런타임에 열거형 항목의 이름이나 DisplayName을 문자열(`FString`)로 변환해 디버그 로깅 시 가독성을 극대화할 수 있습니다.
+- **코드 예시:**
+  ```cpp
+  // CharacterState.h
+  #pragma once
+  #include "CoreMinimal.h"
+
+  UENUM(BlueprintType)
+  enum class ECharacterState : uint8
+  { 
+      Idle        UMETA(DisplayName = "대기"),
+      Walking     UMETA(DisplayName = "보행"),
+      Sprinting   UMETA(DisplayName = "질주"),
+      Attacking   UMETA(DisplayName = "공격 중"),
+      Dead        UMETA(DisplayName = "사망"),
+      MAX         UMETA(Hidden)
+  };
+
+  UENUM(BlueprintType)
+  enum class EEquipState : uint8
+  { 
+      Unequipped  UMETA(DisplayName = "미장착"),
+      Equipping   UMETA(DisplayName = "장착 중"),
+      Equipped    UMETA(DisplayName = "장착 완료"),
+      Unequipping UMETA(DisplayName = "해제 중")
+  };
+  ```
+
+### [Character/Gameplay State Machine 구조 및 연동]
+- **핵심 목적:** 캐릭터의 논리 상태(`ECharacterState`, `EEquipState` 등)를 단일 진실 소스(Single Source of Truth)로 관리하여, 입력 수신, 무기 장착(Equip), 애니메이션 상태 전이(AnimInstance) 간의 모순 없는 전이 제어를 수립합니다.
+- **기술적 팁 (Technical Tips):**
+  - **상태 제어기(Setter) 패턴:** 상태 변수를 단순 public으로 노출하여 직접 변경하기보다 `SetCharacterState()`와 같은 변경 함수(Setter)를 두고, 상태가 변경될 때 이벤트 델리게이트를 브로드캐스트하거나 애니메이션 인스턴스에 즉시 동기화하도록 구현하면 버그를 최소화할 수 있습니다.
+- **코드 예시:**
+  ```cpp
+  // MyCharacter.cpp 내부 연동 예시
+  void AMyCharacter::SetCharacterState(ECharacterState NewState)
+  { 
+      if (CurrentState == NewState) return;
+
+      CurrentState = NewState;
+
+      switch (CurrentState)
+      { 
+      case ECharacterState::Idle:
+      case ECharacterState::Walking:
+          GetCharacterMovement()->MaxWalkSpeed = 400.f;
+          break;
+      case ECharacterState::Sprinting:
+          GetCharacterMovement()->MaxWalkSpeed = 800.f;
+          break;
+      case ECharacterState::Attacking:
+          // 공격 동작 중 이동 제한 처리
+          break;
+      case ECharacterState::Dead:
+          // 입력 차단 및 래그돌/사망 로직 가동
+          DisableInput(Cast<APlayerController>(GetController()));
+          break;
+      }
+  }
+  ```
