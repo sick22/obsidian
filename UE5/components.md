@@ -337,33 +337,73 @@ AMyActor::AMyActor()
           // 상대방 액터 검출 이후 동작 로직 처리
       }
   }
-  ```
 
 
+## 11. 스켈레탈 메쉬 획득 및 컴포넌트 소켓 부착 (Equip 시스템 구현 API)
 
-## 11. ACharacter::GetMesh API 상세 분석
-
-### [ACharacter::GetMesh]
-- **핵심 목적:** 액터 캐스팅이나 컴포넌트 쿼리 연산(`GetComponentByClass`) 없이 캐릭터(`ACharacter`) 본체에 속한 시각적 메인 뼈대 컴포넌트인 `USkeletalMeshComponent*`의 주소를 즉시 획득하는 전용 게터(Getter) 함수입니다.
+### [ACharacter::GetMesh()]
+- **핵심 목적:** `ACharacter` 클래스 내부에 사전 구성된 주 비주얼 컴포넌트인 스켈레탈 메쉬 컴포넌트(`USkeletalMeshComponent*`)의 렌더링 포인터를 반환합니다.
 - **파라미터 상세:**
-  - 없음 (인수 없이 호출).
+  - 파라미터 없음 (`void`).
 - **반환 값:**
-  - `USkeletalMeshComponent*`: 캐릭터의 3D 스켈레탈 메시 및 뼈대(Bone/Socket) 구조를 소유한 컴포넌트 포인터를 반환합니다.
+  - `USkeletalMeshComponent*`: 캐릭터 메쉬 및 애니메이션 시스템을 관장하는 컴포넌트의 포인터.
 - **기술적 팁 (Technical Tips):**
-  - **소켓 어태치먼트의 부모 지정:** 소켓(`FName("RightHandSocket")` 등)은 액터 자체가 아닌 `USkeletalMeshComponent` 내의 뼈대 계층 구조에 정의되어 있습니다. 따라서 무기나 장비류 아이템을 캐릭터의 특정 손이나 신체 소켓에 동적으로 부착(`AttachToComponent`)할 때 부모 컴포넌트(`InParent`) 파라미터로 반드시 `GetMesh()`의 반환값을 전달해야 합니다.
-  - **캐싱 및 최적화:** `ACharacter` C++ 클래스 내부에서 초기 생성 시 포인터를 멤버 변수로 직접 캐싱해 두므로, 매 프레임이나 입력 이벤트마다 호출하더라도 CPU 연산 부하가 없는 최고 속도의 인라인 함수입니다.
+  - 캐릭터의 루트 컴포넌트(`UCapsuleComponent`) 하위에 부착되어 있는 자식 컴포넌트입니다.
+  - 무기나 장비(Armor, Weapon)를 캐릭터 신체 소켓에 마운트할 때 `AttachToComponent`의 `Parent` 인자로 전달되는 표준 부모 대상입니다.
+  - 호출 전 `IsValid(GetMesh())` 또는 `nullptr` 유효성 검증을 거치는 것이 디버깅 관점에서 권장됩니다.
 - **코드 예시:**
   ```cpp
-  // 캐릭터의 오른손 소켓에 무기 컴포넌트를 부착하는 예시
   USkeletalMeshComponent* CharacterMesh = GetMesh();
-  if (CharacterMesh && WeaponMesh)
+  if (CharacterMesh)
   {
-      WeaponMesh->AttachToComponent(
-          CharacterMesh,
-          FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-          FName("RightHandSocket")
-      );
+      // 메쉬 소켓 존재 여부 확인 후 장착 처리 진행
   }
   ```
 
+### [USceneComponent::AttachToComponent()]
+- **핵심 목적:** 지정한 `USceneComponent`를 타깃 컴포넌트 또는 특정 소켓(Socket)의 하위 계층 구조로 신규 귀속 부착(Attach)시킵니다.
+- **파라미터 상세:**
+  - `Parent` (`USceneComponent*`): 부착 타깃이 될 상위 부모 컴포넌트 주소입니다. (예: `GetMesh()`)
+  - `AttachmentRules` (`const FAttachmentTransformRules&`): 위치, 회전, 스케일 변환을 부모 좌표계에 오버라이드할지 또는 이전 월드 위치를 보존할지 결정하는 규칙 구조체입니다.
+  - `SocketName` (`FName`): 부모 컴포넌트 뼈대(Bone) 또는 스켈레탈 애셋에 정의된 소켓의 이름입니다. (`NAME_None` 지정 시 부모의 루트 오프셋에 부착)
+- **반환 값:**
+  - `bool`: 계층 구조 재배치 및 트랜스폼 갱신 부착 성공 여부.
+- **기술적 팁 (Technical Tips):**
+  - **사전 물리/콜리전 해제:** 아이템이 부착되기 전에 `SetSimulatePhysics(false)` 및 `SetCollisionEnabled(ECollisionEnabled::NoCollision)`가 선행 처리되어야 물리 충돌로 인한 튕김 현상을 막을 수 있습니다.
+  - **소켓 명칭 일치:** 부모 메쉬 소켓 이름(`FName`)의 오타(예: `RightHandSockey` 등)가 존재하면 소켓 위치가 아닌 부모의 원점(Origin)에 부착되는 버그가 발생합니다.
+- **코드 예시:**
+  ```cpp
+  void AWeapon::Equip(USceneComponent* InParent, FName InSocketName)
+  {
+      if (!InParent || !ItemMesh) return;
 
+      // 물리 반응 및 충돌 검출 억제
+      ItemMesh->SetSimulatePhysics(false);
+      ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+      // 소켓 변환 정위치(Snap) 부착 규칙 선언
+      FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
+      ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
+  }
+  ```
+
+### [FAttachmentTransformRules (부착 트랜스폼 규칙)]
+- **핵심 목적:** `AttachToComponent` 수행 시 부착되는 주체의 위치(Location), 회전(Rotation), 스케일(Scale) 축 값들이 부모 계층 좌표계로 이동할 때 적용될 트랜스폼 변환 정책을 정의하는 구조체입니다.
+- **주요 프리셋 옵션 및 필드:**
+  - `FAttachmentTransformRules::SnapToTargetNotIncludingScale`: 위치와 회전을 소켓의 피봇 좌표에 밀착(Snap)시키고, 스케일은 부착 주체의 기존 비율을 그대로 유지합니다. (무기 장착의 표준 베스트 프랙티스)
+  - `FAttachmentTransformRules::KeepWorldTransform`: 현재 월드 공간상의 절대 좌표 위치와 회전값을 그대로 고정 유지하면서 계층 구조만 부모 하위로 귀속시킵니다.
+  - `FAttachmentTransformRules::KeepRelativeTransform`: 기존 로컬 상대 좌표 오프셋 값을 보존합니다.
+- **기술적 팁 (Technical Tips):**
+  - 생성자의 두 번째 파라미터 `bWeldSimulatedBodies`를 `true`로 설정하면 강체 물리 시뮬레이션 바디가 부모 물리 바디에 일체형으로 용접(Weld)되어 단일 물리 바디처럼 동작합니다. (비물리 부착 아이템인 경우 콜리전을 끄는 것이 안전함)
+- **코드 예시:**
+  ```cpp
+  // 무기 손 장착용 전용 FAttachmentTransformRules 선언
+  FAttachmentTransformRules AttachRule(
+      EAttachmentRule::SnapToTarget, // Location
+      EAttachmentRule::SnapToTarget, // Rotation
+      EAttachmentRule::KeepWorld,    // Scale
+      true                           // bWeldSimulatedBodies
+  );
+  ```
+
+  ```
