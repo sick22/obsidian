@@ -338,3 +338,32 @@ AMyActor::AMyActor()
       }
   }
   ```
+
+
+
+## 11. ACharacter::GetMesh API 상세 분석
+
+### [ACharacter::GetMesh]
+- **핵심 목적:** 액터 캐스팅이나 컴포넌트 쿼리 연산(`GetComponentByClass`) 없이 캐릭터(`ACharacter`) 본체에 속한 시각적 메인 뼈대 컴포넌트인 `USkeletalMeshComponent*`의 주소를 즉시 획득하는 전용 게터(Getter) 함수입니다.
+- **파라미터 상세:**
+  - 없음 (인수 없이 호출).
+- **반환 값:**
+  - `USkeletalMeshComponent*`: 캐릭터의 3D 스켈레탈 메시 및 뼈대(Bone/Socket) 구조를 소유한 컴포넌트 포인터를 반환합니다.
+- **기술적 팁 (Technical Tips):**
+  - **소켓 어태치먼트의 부모 지정:** 소켓(`FName("RightHandSocket")` 등)은 액터 자체가 아닌 `USkeletalMeshComponent` 내의 뼈대 계층 구조에 정의되어 있습니다. 따라서 무기나 장비류 아이템을 캐릭터의 특정 손이나 신체 소켓에 동적으로 부착(`AttachToComponent`)할 때 부모 컴포넌트(`InParent`) 파라미터로 반드시 `GetMesh()`의 반환값을 전달해야 합니다.
+  - **캐싱 및 최적화:** `ACharacter` C++ 클래스 내부에서 초기 생성 시 포인터를 멤버 변수로 직접 캐싱해 두므로, 매 프레임이나 입력 이벤트마다 호출하더라도 CPU 연산 부하가 없는 최고 속도의 인라인 함수입니다.
+- **코드 예시:**
+  ```cpp
+  // 캐릭터의 오른손 소켓에 무기 컴포넌트를 부착하는 예시
+  USkeletalMeshComponent* CharacterMesh = GetMesh();
+  if (CharacterMesh && WeaponMesh)
+  {
+      WeaponMesh->AttachToComponent(
+          CharacterMesh,
+          FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+          FName("RightHandSocket")
+      );
+  }
+  ```
+
+
