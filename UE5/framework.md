@@ -594,3 +594,122 @@ graph TD
   ```cpp
   bool bIsAttacking = AnimInstance->Montage_IsPlaying(AttackMontage);
   ```
+
+
+## 10. Enum 기반 애니메이션 몽타주(Animation Montage) 연동 설계 패턴
+
+### [1. Enum-Indexed Montage Mapping 패턴 (TMap<Enum, UAnimMontage*>)]
+- **핵심 목적:** 무기 유형(`EWeaponType`), 스킬 종류(`ESkillType`), 피격 부위/방향(`EDamageDirection`) 등의 열거형 상태 키를 기준으로 애니메이션 몽타주 에셋 포인터를 `TMap`에 매핑하여 하드코딩 조건문(`switch/if`) 없이 (1)$ 시간에 동적 룩업 및 재생을 가동하는 데이터 기반 설계 패턴입니다.
+- **기술적 팁 (Technical Tips):**
+  - **디테일 패널 편집성:** `UPROPERTY(EditAnywhere, Category = "Animation") TMap<EWeaponType, UAnimMontage*> WeaponMontageMap;` 구조로 선언하면, C++ 코드를 수정하지 않고도 에디터 디테일 패널에서 무기 타입별 몽타주 에셋을 유연하게 할당 및 교체할 수 있습니다.
+- **코드 예시:**
+  ```cpp
+  // MyCharacter.h
+  UENUM(BlueprintType)
+  enum class EWeaponType : uint8
+  { 
+      BareHand,
+      OneHandedSword,
+      TwoHandedSword,
+      Bow
+  };
+
+  UCLASS()
+  class AMyCharacter : public ACharacter
+  { 
+      GENERATED_BODY()
+  protected:
+      UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+      TMap<EWeaponType, UAnimMontage*> WeaponAttackMontageMap;
+
+      UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+      EWeaponType CurrentWeaponType = EWeaponType::BareHand;
+
+  public:
+      void PlayAttackMontageByWeapon();
+  };
+
+  // MyCharacter.cpp
+  void AMyCharacter::PlayAttackMontageByWeapon()
+  {
+      // Enum 키값으로 TMap에서 해당 무기 전용 몽타주 탐색
+      if (UAnimMontage** FoundMontage = WeaponAttackMontageMap.Find(CurrentWeaponType))
+      { 
+          if (*FoundMontage && GetMesh()->GetAnimInstance())
+          { 
+              GetMesh()->GetAnimInstance()->Montage_Play(*FoundMontage);
+          }
+      }
+  }
+  ```
+
+### [2. Enum 기반 몽타주 섹션(Section) 점프 및 콤보 제어 패턴]
+- **핵심 목적:** 하나의 단일 몽타주 파일 내에 여러 공격 모션 섹션(`Attack01`, `Attack02`, `Attack03`)을 구성하고, 캐릭터의 콤보 단계 열거형(`EComboState`) 수치에 대응하는 섹션 이름(`FName`)을 동적으로 연산하여 끊김 없는 연격 콤보를 구현하는 패턴입니다.
+- **기술적 팁 (Technical Tips):**
+  - **FName 매핑 연산:** Enum 또는 콤보 카운트 인덱스를 기반으로 `FName(*FString::Printf(TEXT("Attack0%d"), ComboIndex))`와 같이 문자열 파싱 규칙을 적용하거나 Enum 자체를 키로 하는 섹션 이름 맵(`TMap<EComboState, FName>`)을 구축하면 섹션 제어를 캡슐화할 수 있습니다.
+- **코드 예시:**
+  ```cpp
+  UENUM(BlueprintType)
+  enum class EComboState : uint8
+  { 
+      None,
+      Combo1,
+      Combo2,
+      Combo3
+  };
+
+  void AMyCharacter::ExecuteComboAttack()
+  {
+      UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+      if (!AnimInstance || !ComboMontage) return;
+
+      if (CurrentComboState == EComboState::None)
+      { 
+          // 콤보 시작: 몽타주 재생 후 첫 번째 섹션 진입
+          CurrentComboState = EComboState::Combo1;
+          AnimInstance->Montage_Play(ComboMontage);
+          AnimInstance->Montage_JumpToSection(FName("Combo1"), ComboMontage);
+      }
+      else if (bCanChainCombo) // 노티파이를 통해 입력 윈도우가 열린 상태
+      { 
+          // 다음 콤보 단계로 Enum 및 타임라인 점프 진행
+          bCanChainCombo = false;
+          switch (CurrentComboState)
+          { 
+          case EComboState::Combo1:
+              CurrentComboState = EComboState::Combo2;
+              AnimInstance->Montage_JumpToSection(FName("Combo2"), ComboMontage);
+              break;
+          case EComboState::Combo2:
+              CurrentComboState = EComboState::Combo3;
+              AnimInstance->Montage_JumpToSection(FName("Combo3"), ComboMontage);
+              break;
+          }
+      }
+  }
+  ```
+
+### [3. AnimNotify & Enum 상태 윈도우 제어 패턴 (Notify & Enum Coordination)]
+- **핵심 목적:** 몽타주 타임라인에 배치된 노티파이(AnimNotify) 지점에서 캐릭터의 액션 상태 열거형(`EActionState::ComboWindowOpen`, `EActionState::HitCheckActive`)을 변경하여 입력 제어 윈도우 획득 및 무기 물리 판정을 정밀 제어하는 연동 패턴입니다.
+- **기술적 팁 (Technical Tips):**
+  - **상태 오염 차단:** 몽타주가 도중에 강제 중단(`Montage_Stop`)되거나 피격될 경우, 노티파이가 정상 호출되지 못해 상태 열거형이 특정 진입 상태에 갇히는(Lock) 버그가 발생할 수 있습니다. 따라서 반드시 `OnMontageEnded` 델리게이트를 바인딩하여 몽타주 종료 시점에 상태 열거형을 `EActionState::Idle` 상태로 원복하는 청소(Cleanup) 로직을 병행해야 합니다.
+- **코드 예시:**
+  ```cpp
+  // 몽타주 종료 델리게이트 바인딩 예시 (BeginPlay 등에서 수행)
+  void AMyCharacter::BeginPlay()
+  {
+      Super::BeginPlay();
+      if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+      { 
+          AnimInstance->OnMontageEnded.AddDynamic(this, &AMyCharacter::OnMontageEndedHandler);
+      }
+  }
+
+  // 몽타주 종료 시 Enum 상태 청소
+  void AMyCharacter::OnMontageEndedHandler(UAnimMontage* Montage, bool bInterrupted)
+  {
+      CurrentActionState = EActionState::Idle;
+      CurrentComboState = EComboState::None;
+      bCanChainCombo = false;
+  }
+  ```
