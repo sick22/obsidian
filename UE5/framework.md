@@ -536,3 +536,61 @@ graph TD
       }
   }
   ```
+
+
+## 9. C++ 애니메이션 몽타주(Animation Montage) 제어 API
+
+### [UAnimInstance::Montage_Play]
+- **핵심 목적:** 지정한 애니메이션 몽타주(`UAnimMontage`) 에셋을 애님 인스턴스에 할당된 슬롯(Slot)을 통해 즉시 재생 연산을 가동시키는 API입니다.
+- **파라미터 상세:**
+  - `UAnimMontage* MontageToPlay`: 재생시킬 애니메이션 몽타주 에셋 포인터입니다.
+  - `float InPlayRate`: 재생 속도 비율(Scale)입니다 (`1.0f`가 기본 1배속, `2.0f`는 2배속 재생).
+  - `EMontagePlayReturnType ReturnValueType`: 반환 타입의 성격을 결정합니다 (`MontageLength` 기본 설정 시 몽타주의 총 재생 초 단위 길이 반환).
+  - `float InTimeToStartFrom`: 몽타주 내부에서 재생을 시작할 오프셋 타임(초)입니다.
+  - `bool bStopAllMontages`: `true`인 경우 기존에 재생되던 다른 슬롯의 몽타주들을 중단하고 새로운 몽타주를 전면 재생합니다.
+- **반환 값:**
+  - `float`: 몽타주가 성공적으로 가동된 경우 몽타주의 실질 재생 시간(초)을 반환하며, 재생에 실패한 경우 `0.0f`를 반환합니다.
+- **기술적 팁 (Technical Tips):**
+  - **Slot 노드 구성 필수:** C++에서 `Montage_Play`를 아무리 정상 호출하더라도, 해당 캐릭터의 애니메이션 블루프린트 애님 그래프(AnimGraph) 내에 몽타주에 지정된 슬롯 노드(예: `DefaultSlot` 또는 `UpperBodySlot`)가 연결되어 있지 않으면 화면에 애니메이션 모션이 출력되지 않으므로 그래프 연결 상태를 사전에 점검해야 합니다.
+  - **ACharacter::PlayAnimMontage 래핑 함수:** 캐릭터 클래스 자체에서도 `PlayAnimMontage(MontageToPlay, ...)` 래퍼 API를 제공하여 `GetMesh()->GetAnimInstance()` 쿼리 구문을 축약할 수 있습니다.
+- **코드 예시:**
+  ```cpp
+  if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+  { 
+      if (AttackMontage)
+      { 
+          float MontageLength = AnimInstance->Montage_Play(AttackMontage, 1.0f);
+      }
+  }
+  ```
+
+### [UAnimInstance::Montage_JumpToSection]
+- **핵심 목적:** 현재 재생 중이거나 지정한 애니메이션 몽타주 내부의 특정 섹션(Section) 이름 위치로 재생 타임라인을 즉시 점프 이동시키는 분기 제어 API입니다.
+- **파라미터 상세:**
+  - `FName SectionName`: 몽타주 에셋에 등록된 타깃 섹션의 고유 명칭입니다 (예: `FName("AttackCombo2")`).
+  - `const UAnimMontage* Montage`: 대상을 특정할 몽타주 에셋 포인터입니다 (지정하지 않거나 `nullptr` 입력 시 현재 재생 중인 몽타주 대상으로 가동).
+- **반환 값:**
+  - 없음 (`void`)
+- **기술적 팁 (Technical Tips):**
+  - **연속 콤보 시스템 구현:** 평타 공격 콤보 시스템 구현 시, `Montage_Play`를 매번 다시 호출하여 처음부터 블렌드 인(Blend In)시키는 대신, 하나의 몽타주 안에 여러 공격 동작 섹션(`Section1`, `Section2`, `Section3`)을 배치해두고 입력 시점에 `Montage_JumpToSection`을 호출하면 애니메이션이 끊김 없이 부드럽게 연결됩니다.
+- **코드 예시:**
+  ```cpp
+  if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+  { 
+      // 콤보 2단계 섹션으로 즉시 타임라인 이동
+      AnimInstance->Montage_JumpToSection(FName("Combo02"), AttackMontage);
+  }
+  ```
+
+### [UAnimInstance::Montage_IsPlaying]
+- **핵심 목적:** 특정 애니메이션 몽타주 에셋이 현재 애님 인스턴스 상에서 정상적으로 재생 연산 중인 상태인지 유효성 상태를 쿼리합니다.
+- **파라미터 상세:**
+  - `const UAnimMontage* Montage`: 재생 여부를 검사할 타깃 몽타주 포인터입니다.
+- **반환 값:**
+  - `bool`: 몽타주가 현재 블렌드 인/재생 상태에 있으면 `true`, 중단되거나 완료된 상태이면 `false`를 반환합니다.
+- **기술적 팁 (Technical Tips):**
+  - **중복 입력 차단 (Input Lock):** 피격 중이거나 이미 공격 몽타주가 재생 중일 때 사용자의 추가 공격 입력을 차단하는 조건 분기(`if (!AnimInstance->Montage_IsPlaying(AttackMontage))`)로 활용하여 모션 덮어쓰기 버그를 방지합니다.
+- **코드 예시:**
+  ```cpp
+  bool bIsAttacking = AnimInstance->Montage_IsPlaying(AttackMontage);
+  ```
