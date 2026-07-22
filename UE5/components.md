@@ -407,3 +407,34 @@ AMyActor::AMyActor()
   ```
 
   ```
+
+
+## 12. 런타임 동적 콜리전 제어 API
+
+### [UPrimitiveComponent::SetCollisionProfileName]
+- **핵심 목적:** 디테일 패널에서 사전에 설정(Preset)된 특정 콜리전 프로필 명칭(예: `"NoCollision"`, `"BlockAll"`, `"Pawn"`, `"OverlapAll"` 등)을 인자로 취하여, 컴포넌트의 물리 및 쿼리 반응 필터 테이블 설정을 런타임에 동적으로 일괄 교체합니다.
+- **파라미터 상세:**
+  - `FName InProfileName`: 적용할 대상 콜리전 프리셋의 고유 등록 키 이름입니다.
+  - `bool bUpdateOverlaps`: `true` 지정 시 프로필 변경 즉시 주변 충돌 오버랩 현황을 재점검(Update)하여 이벤트를 새로 동기화합니다.
+- **반환 값:**
+  - 없음 (`void`)
+- **기술적 팁 (Technical Tips):**
+  - **프리셋 예외 억제:** 입력한 프로필 명이 프로젝트 세팅에 정의되지 않은 오타 문자열일 경우, 아무런 런타임 크래시 없이 엔진 내부적으로 최하위 안전장치인 `NoCollision`으로 강제 대체해 적용하므로 대소문자 매핑 실수가 없도록 관리해야 합니다.
+- **코드 예시:**
+  ```cpp
+  // 캐릭터가 죽었을 때 래그돌 상태 전환 및 캡슐 충돌 무시를 위해 프로필을 동적으로 NoCollision으로 변경
+  GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
+  ```
+
+### [UPrimitiveComponent::SetCollisionEnabled]
+- **핵심 목적:** 컴포넌트의 충돌 가동 성격 수준(NoCollision, QueryOnly, PhysicsOnly, QueryAndPhysics)을 런타임 실행 중 동적으로 개별 가동/제어합니다.
+- **파라미터 상세:**
+  - `ECollisionEnabled::Type NewType`: 새로 대입할 활성화 동작 모드 열거형 값입니다.
+- **반환 값:**
+  - 없음 (`void`)
+- **기술적 팁 (Technical Tips):**
+  - **발사체 관통 및 다중 감지 억제:** 발사체가 타깃에 명중하는 순간 추가 충돌 연산 및 이벤트 중복 트리거를 원천 방지하기 위해 피격 직후 `SetCollisionEnabled(ECollisionEnabled::NoCollision)`을 신속하게 실행하는 안전 패턴이 권장됩니다.
+- **코드 예시:**
+  ```cpp
+  CollisionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  ```

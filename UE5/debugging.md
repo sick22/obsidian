@@ -135,3 +135,36 @@ DrawDebugPoint(GetWorld(), Position, Size, Color, bPersistentLines, LifeTime, De
 - `bool bPersistentLines`: 영구 표시 여부입니다.
 - `float LifeTime`: 화면 유지 시간입니다.
 - `uint8 DepthPriority`: 렌더링 우선순위입니다.
+
+
+## 5. 게임플레이 오디오 연출 API
+
+### [UGameplayStatics::PlaySoundAtLocation]
+- **핵심 목적:** 월드 공간 상의 지정된 3차원 위치 좌표를 기준으로 단발성(One-shot) 3D 입체 음향(`USoundBase`)을 스폰하여 즉시 재생하는 정적 유틸리티 함수입니다.
+- **파라미터 상세:**
+  - `const UObject* WorldContextObject`: 월드 컨텍스트 쿼리를 제공하는 주체 인스턴스 포인터(일반적으로 `this` 또는 `GetWorld()`)입니다.
+  - `USoundBase* Sound`: 재생할 사운드 웨이브(Sound Wave) 혹은 사운드 큐(Sound Cue) 에셋 포인터입니다.
+  - `FVector Location`: 입체 음향이 스폰되어 방출될 월드 3D 좌표 벡터입니다.
+  - `FRotator Rotation`: 사운드 스폰 시점의 회전값입니다 (`FRotator::ZeroRotator` 기본값).
+  - `float VolumeMultiplier`: 기본 사운드 음량에 곱연산 적용할 가중 팩터입니다 (`1.f` 기본값).
+  - `float PitchMultiplier`: 기본 사운드 피치(음높이)에 곱연산 적용할 가중 팩터입니다 (`1.f` 기본값).
+  - `float StartTime`: 사운드 트랙 재생을 개시할 시간(초) 오프셋 값입니다.
+  - `USoundAttenuation* AttenuationSettings`: 거리에 따른 사운드 감쇄 법칙을 정의한 에셋 포인터입니다.
+  - `USoundConcurrency* ConcurrencySettings`: 오디오 채널 동시 재생 한도를 제어하는 에셋 포인터입니다.
+- **반환 값:**
+  - 없음 (`void`)
+- **기술적 팁 (Technical Tips):**
+  - **수명 주기 자동 해제:** 가동된 사운드는 내부 임시 오디오 컴포넌트를 통해 재생된 뒤 플레이가 종료되면 메모리에서 자동 릴리즈됩니다. 따라서 무기나 장비처럼 액터와 함께 움직이며 실시간으로 소리가 밀착되어야 한다면 본 함수 대신 `PlaySoundAttached()`를 활용해야 합니다.
+  - **헤더 지정:** C++ 컴파일을 위해 `#include "Kismet/GameplayStatics.h"` 헤더 추가가 필수적입니다.
+- **코드 예시:**
+  ```cpp
+  #include "Kismet/GameplayStatics.h"
+
+  void AMyCharacter::PlayHitFeedbackSound(FVector ImpactPoint)
+  { 
+      if (ImpactSound)
+      { 
+          UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, ImpactPoint);
+      }
+  }
+  ```
