@@ -438,3 +438,63 @@ AMyActor::AMyActor()
   ```cpp
   CollisionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
   ```
+
+
+## 13. 기하학적 충돌 스윕 트레이스(Sweep Trace) API
+
+### [UKismetSystemLibrary::BoxTraceSingle]
+- **핵심 목적:** 가상의 3차원 박스 형태 기하체를 시작점부터 끝점까지 선형 스윕(Sweep) 이동시키며 충돌을 감지하고, 최초로 검출된 단 하나의 대상에 대한 상세 피격 결과 정보를 반환하는 트레이스 API입니다.
+- **파라미터 상세:**
+  - `const UObject* WorldContextObject`: 호출 주체의 컨텍스트를 제공하는 오브젝트(보통 `this` 또는 `GetWorld()`)입니다.
+  - `const FVector Start`: 박스 스윕 검사를 개시할 3D 시작 좌표입니다.
+  - `const FVector End`: 박스 스윕 검사를 종결할 3D 끝 좌표입니다.
+  - `const FVector HalfSize`: 박스의 XYZ 반경(반지름) 크기를 나타내는 3D 벡터 벡터입니다.
+  - `const FRotator Orientation`: 월드 공간 상에서 스윕 기하체 박스가 가질 회전 정렬 각도입니다.
+  - `ETraceTypeQuery TraceChannel`: 검출 필터로 삼을 타깃 트레이스 채널 값입니다.
+  - `bool bTraceComplex`: 단순 충돌 캡슐 콜리전 대신 스태틱/스켈레탈 메쉬의 정밀 폴리곤 삼각형 단계까지 충돌 검출을 수행할지 여부입니다.
+  - `const TArray<AActor*>& ActorsToIgnore`: 검사 대상에서 명시적으로 제외할 액터 목록 포인터 배열입니다.
+  - `EDrawDebugTrace::Type DrawDebugType`: 궤적을 에디터에 디버그 라인으로 시각화할 모드 플래그입니다 (`None`, `ForOneFrame`, `ForDuration`, `Persistent`).
+  - `FHitResult& OutHit`: 충돌 성공 시 타격점 좌표, 표면 노멀, 타격 대상 컴포넌트 정보가 기입될 결과 구조체입니다.
+  - `bool bIgnoreSelf`: 이 함수를 호출한 액터 본체를 충돌 탐지 대상에서 제외할지 여부입니다.
+  - `FLinearColor TraceColor` / `FLinearColor TraceHitColor`: 디버그 선 시각화 시 검사 선 및 피격 접점 표시의 색상 사양입니다.
+- **반환 값:**
+  - `bool`: 무시 대상을 제외하고 지정한 채널 필터 상의 충돌체가 최초 하나라도 검출된 경우 `true`, 검출되지 않고 관통한 경우 `false`를 반환합니다.
+- **기술적 팁 (Technical Tips):**
+  - **디버그 유틸리티 내장:** 엔진 자체의 물리 트레이스 함수(`GetWorld()->SweepSingleByChannel`)와 달리, `UKismetSystemLibrary` 헬퍼 계열 함수는 에디터 디폴트 드로잉 디버그 선 기능(`DrawDebugType`)을 파라미터 전달만으로 바로 켤 수 있어 공격 범위 튜닝 및 디버깅 가시화에 매우 유용합니다.
+  - **채널 변환 방법:** 일반 Collision Channel 플래그를 TraceTypeQuery로 바꿀 때는 `UEngineTypes::ConvertToTraceType(ECC_Visibility)`와 같은 인라인 헬퍼 쿼리를 활용합니다.
+  - `#include "Kismet/KismetSystemLibrary.h"` 헤더를 추가해야 컴파일러에서 식별이 가능합니다.
+- **코드 예시:**
+  ```cpp
+  #include "Kismet/KismetSystemLibrary.h"
+
+  void AMyCharacter::PerformMeleeAttackTrace()
+  { 
+      FVector StartLoc = GetActorLocation() + GetActorForwardVector() * 50.f;
+      FVector EndLoc = StartLoc + GetActorForwardVector() * 150.f;
+      FVector HalfSize(30.f, 30.f, 50.f); // 가로 60cm, 세로 60cm, 높이 100cm 규모 박스
+      FRotator Rotation = GetActorRotation();
+
+      TArray<AActor*> IgnoreActors;
+      IgnoreActors.Add(this); // 호출자 자신 제외
+
+      FHitResult HitResult;
+      bool bHit = UKismetSystemLibrary::BoxTraceSingle(
+          this,
+          StartLoc,
+          EndLoc,
+          HalfSize,
+          Rotation,
+          UEngineTypes::ConvertToTraceType(ECC_GamePlayWeapon), // 커스텀 채널 변환
+          false,
+          IgnoreActors,
+          EDrawDebugTrace::ForDuration, // 2초간 디버그 박스 시각화 출력
+          HitResult,
+          true
+      );
+
+      if (bHit && HitResult.GetActor())
+      { 
+          // 타격 처리 로직 수행
+      }
+  }
+  ```
