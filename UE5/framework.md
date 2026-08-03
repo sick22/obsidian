@@ -713,3 +713,57 @@ graph TD
       bCanChainCombo = false;
   }
   ```
+
+
+## 11. 런타임 동적 액터 스폰(SpawnActor) API
+
+### [UWorld::SpawnActor<>]
+- **핵심 목적:** 게임이 실행 중인 런타임(Runtime) 상태의 월드 공간 내에 지정된 C++ 또는 블루프린트 클래스 기반의 액터(`AActor` 상속 클래스) 인스턴스를 동적으로 인스턴스화하고 스폰(Spawn)시키는 핵심 월드 유틸리티 템플릿 API입니다.
+- **파라미터 상세:**
+  - `Class` (`UClass*` 또는 `TSubclassOf<T>`): 스폰시킬 액터의 런타임 타입 클래스 포인터입니다.
+  - `Location` (`const FVector*` 또는 `FVector`): 액터가 배치될 월드 기준 스폰 시작 3차원 위치 좌표 벡터입니다.
+  - `Rotation` (`const FRotator*` / `FRotator`): 액터 배치 시 적용할 월드 기준 스폰 시작 회전값입니다.
+  - `SpawnParameters` (`const FActorSpawnParameters&`): 스폰 처리 옵션(주인 지정, 충돌 시 처리 규칙 등)을 패키징한 옵션 구조체 참조입니다.
+- **반환 값:**
+  - `T*` (템플릿 타입 포인터): 스폰에 성공한 경우 생성된 구체 액터 인스턴스의 메모리 주소를 반환하며, 충돌 충돌 막힘이나 클래스 널 오류 등으로 실패한 경우 `nullptr`을 반환합니다.
+- **기술적 팁 (Technical Tips):**
+  - **스폰 충돌 처리 설정 (`SpawnCollisionHandlingOverride`):** 스폰하려는 위치에 이미 타 액터나 벽이 존재해 교차할 경우, 스폰을 취소할 것인지(`DontSpawnIfColliding`), 아니면 강제로 스폰시킬 것인지(`AlwaysSpawn`) 등을 `FActorSpawnParameters` 구조체 필드를 통해 지정해 주어야 스폰 도중 누락되는 버그를 예방할 수 있습니다.
+  - **스폰 오너 및 인스티게이터 지정:** 투사체나 소환수 등은 스폰 매개변수에 `Owner`(소유자)와 `Instigator`(행위 가해자)를 명시해야 충돌 피격 시 데미지 전달 소유권을 정밀하게 트래킹할 수 있습니다.
+  - **템플릿을 통한 자동 캐스팅:** `SpawnActor<AWeapon>(...)`과 같이 제네릭 타입을 기재하여 호출하면 내부적으로 `Cast<T>` 변환 연산을 적용해 안전하게 다운캐스팅된 자식 클래스 포인터를 반환해 주므로 번거로운 명시적 형변환을 축약할 수 있습니다.
+- **코드 예시:**
+  ```cpp
+  #include "Engine/World.h"
+  #include "MyProjectile.h"
+
+  void AMyCharacter::FireProjectile()
+  {
+      UWorld* World = GetWorld();
+      if (!World || !ProjectileClass) return;
+
+      // 1. 발사 위치 및 회전 연산 (카메라 뷰포트 기준)
+      FVector SpawnLocation = GetMesh()->GetSocketLocation(TEXT("MuzzleSocket"));
+      FRotator SpawnRotation = GetControlRotation();
+
+      // 2. 세부 스폰 파라미터 구조체 설정
+      FActorSpawnParameters SpawnParams;
+      SpawnParams.Owner = this; // 스폰 주체 설정 (소유권 전파)
+      SpawnParams.Instigator = GetInstigator(); // 데미지 트래킹용 가해자 등록
+      
+      // 스폰 위치가 겹쳐도 강제로 스폰하도록 물리 처리 오버라이드
+      SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+      // 3. 템플릿 함수 호출을 통한 액터 동적 생성
+      AMyProjectile* SpawnedProj = World->SpawnActor<AMyProjectile>(
+          ProjectileClass, 
+          SpawnLocation, 
+          SpawnRotation, 
+          SpawnParams
+      );
+
+      if (SpawnedProj)
+      {
+          // 발사 물리 및 초기 속도 가동 처리
+          SpawnedProj->Launch();
+      }
+  }
+  ```
