@@ -373,3 +373,64 @@ public:
       float BaseDamage;
   };
   ```
+
+
+## 8. 형식 안정성이 보장된 UClass 템플릿 (TSubclassOf)
+
+### [TSubclassOf<T>]
+- **핵심 목적:** 단순 `UClass*` 포인터를 사용할 때 발생하는 컴파일 타임 형식 체크 모호성을 제거하기 위해, 특정 C++ 기본 클래스 `T` 및 해당 클래스를 상속받은 자식 클래스들의 리플렉션 `UClass` 메타데이터만을 대입 및 보관할 수 있도록 제한하는 타입 안전 템플릿 래퍼 클래스입니다.
+- **타입 매개변수 상세:**
+  - `T`: 형식 제약의 기준이 되는 부모 클래스 타입입니다 (예: `AActor`, `APawn`, `ACharacter`, `AMyBaseWeapon` 등).
+- **반환 값 / 호환 패턴:**
+  - `TSubclassOf<T>`는 내부적으로 `UClass*` 포인터를 캡슐화하고 있어, 함수 인자로 `UClass*`를 인가받는 엔진 API(예: `SpawnActor`)에 별도의 명시적 형변환 연산 없이 다이렉트로 대입이 가능합니다.
+- **기술적 팁 (Technical Tips):**
+  - **컴파일 타임 형식 안정성 (Type Safety):** C++ 코드 내부에서 잘못된 무관한 형식의 클래스 메타데이터 포인터가 대입되거나 형변환되는 것을 컴파일 오류 단계에서 사전에 차단합니다.
+  - **에디터 프로퍼티 할당 드롭다운 필터링:** `UPROPERTY(EditAnywhere)` 지정자와 병행할 시, 에디터 디테일 패널 상에서 오직 `T` 클래스를 상속받은 C++ 클래스 및 블루프린트 클래스(BP) 목록들만 자동 필터링되어 드롭다운 창에 표기되므로, 에디터 세팅 작업 중의 무작위 클래스 할당 오류를 방지합니다.
+- **코드 예시:**
+  ```cpp
+  // WeaponSpawner.h
+  #pragma once
+
+  #include "CoreMinimal.h"
+  #include "GameFramework/Actor.h"
+  #include "MyBaseWeapon.h"
+  #include "WeaponSpawner.generated.h"
+
+  UCLASS()
+  class MYPROJECT_API AWeaponSpawner : public AActor
+  {
+      GENERATED_BODY()
+
+  protected:
+      // AMyBaseWeapon 및 이 클래스를 상속받는 자식 무기 블루프린트 클래스(BP)만 에디터 디테일 패널에서 할당할 수 있도록 타입 제한
+      UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")
+      TSubclassOf<AMyBaseWeapon> WeaponClassToSpawn;
+
+  public:
+      void SpawnSelectedWeapon();
+  };
+
+  // WeaponSpawner.cpp
+  #include "WeaponSpawner.h"
+  #include "Engine/World.h"
+
+  void AWeaponSpawner::SpawnSelectedWeapon()
+  {
+      UWorld* World = GetWorld();
+      // 유효성 널체크 필수 지침 준수
+      if (World && WeaponClassToSpawn)
+      {
+          FActorSpawnParameters SpawnParams;
+          SpawnParams.Owner = this;
+          
+          // WeaponClassToSpawn 변수가 UClass* 형태이므로 그대로 인자 전달 가능
+          AMyBaseWeapon* NewWeapon = World->SpawnActor<AMyBaseWeapon>(
+              WeaponClassToSpawn, 
+              GetActorLocation(), 
+              GetActorRotation(), 
+              SpawnParams
+          );
+      }
+  }
+  ```
+  ```
