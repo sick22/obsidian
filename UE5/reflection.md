@@ -333,3 +333,43 @@ public:
       }
   }
   ```
+
+
+## 7. UCLASS() 매크로 및 UClass 리플렉션 메타데이터
+
+### [UCLASS() 매크로 및 UClass 시스템]
+- **핵심 목적:** 일반 C++ 클래스를 언리얼 오브젝트(`UObject`) 클래스로 승격하여 가비지 컬렉션(GC), 리플렉션 가시성, 블루프린트 노출, 직렬화 및 네트워크 데이터 복제(Replication)를 통합 지원하도록 UHT(Unreal Header Tool)에 처리 사양을 전달하는 지시어 매크로입니다.
+- **주요 지정자(Specifiers) 상세:**
+  - `Blueprintable`: 블루프린트 에디터 상에서 이 C++ 클래스를 부모로 삼는 하위 블루프린트 클래스(BP)를 생성할 수 있도록 허용합니다. (파생 클래스들에 상속)
+  - `NotBlueprintable`: 이 클래스를 상속하는 블루프린트 클래스 생성을 금지합니다 (디폴트 설정값).
+  - `BlueprintType`: 이 클래스를 블루프린트 그래프에서 변수 타입으로 취급할 수 있도록 허용하여, 블루프린트 내에서 이 객체의 포인터를 변수 유형으로 저장하거나 노드 핀(Pin)의 매개변수로 안전하게 넘겨받을 수 있도록 노출합니다.
+  - `Abstract`: 이 클래스를 추상(Abstract) 베이스 클래스로 지정합니다. 이 클래스는 직접 월드에 스폰(`SpawnActor`)하거나 단독 인스턴스로 생성할 수 없으며, 반드시 다른 파생 구체 클래스가 상속해야 인스턴스화가 가능합니다.
+  - `Config`: 이 클래스의 특정 `UPROPERTY` 변수들을 외부 설정 파일(`.ini`)에 저장하고 런타임에 동적으로 바인딩되도록 구성합니다 (예: `Config = Game`).
+  - `DefaultConfig`: 프로젝트 세팅 등 에디터 GUI에서 이 설정 값을 수정했을 때, 기본 `.ini` 파일에 값을 즉각 영구 저장하도록 보장합니다.
+- **기술적 팁 (Technical Tips):**
+  - **UClass 유형 안전 포인터 (`TSubclassOf<T>`):** 특정 C++ 클래스 파생 유형에 부합하는 리플렉션 UClass 메타데이터의 주소 자체를 변수로 저장할 때는 단순 `UClass*` 대신 템플릿 제약자인 `TSubclassOf<AMyBaseClass>`를 활용해야 에디터 할당 창에서 무관한 클래스가 노출되는 것을 컴파일 타임에 물리적으로 예방할 수 있습니다.
+  - **StaticClass() API:** 해당 C++ 클래스 유형의 리플렉션 `UClass*` 메타데이터 포인터 자체를 쿼리할 때는 `AMyClass::StaticClass()` 정적 함수를 호출하면 고속으로 메모리 주소를 취득할 수 있습니다.
+- **코드 예시:**
+  ```cpp
+  // MyBaseWeapon.h
+  #pragma once
+
+  #include "CoreMinimal.h"
+  #include "GameFramework/Actor.h"
+  #include "MyBaseWeapon.generated.h"
+
+  // 1. 블루프린트 상속 허용(Blueprintable) 및 변수 타입 노출(BlueprintType) 설정
+  // 2. 직접 배치 불가를 선언하는 추상(Abstract) 클래스 선언
+  UCLASS(Abstract, Blueprintable, BlueprintType, Config = Game)
+  class MYPROJECT_API AMyBaseWeapon : public AActor
+  {
+      GENERATED_BODY()
+
+  public:
+      AMyBaseWeapon();
+
+      // 외부 DefaultGame.ini에 매핑되어 관리될 무기 데미지 기본값
+      UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Stats")
+      float BaseDamage;
+  };
+  ```
