@@ -533,3 +533,97 @@ AMyActor::AMyActor()
   - 이 방향 벡터 $u$는 앞서 계산된 `URadialFalloff`의 실수형 스칼라 값 $OutputValue$와 결합(곱산)되어 최종 폭발 물리력 벡터($FinalForce$)를 결정합니다:
     \[FinalForce = u \times OutputValue = u \times Magnitude \times f(d)\]
   - 즉, `URadialVector`가 방향성 기하 정보($u$)를 제공하고 `URadialFalloff`가 영역에 따른 힘의 스칼라 강도 감쇄 정보($f(d)$)를 제공하여, 최종 폭발 벡터력을 완성시키는 밀접한 상호 결합 관계(Multiply Field)를 띱니다.
+
+---
+
+## 15. 나이아가라 시스템(Niagara System) 및 컴포넌트 제어 API
+
+언리얼 엔진 5.7의 차세대 이펙트 프레임워크인 나이아가라(Niagara)는 C++ 코드에서 에셋을 참조하고, 컴포넌트를 통해 월드에 스폰하며, 런타임에 사용자 정의 파라미터(User Parameters)를 동적으로 수정할 수 있는 강력한 API를 제공합니다. 나이아가라 기능을 C++에서 사용하려면 프로젝트의 `Build.cs` 파일 내 `PublicDependencyModuleNames`에 `"Niagara"` 모듈이 추가되어 있어야 합니다.
+
+### [UNiagaraSystem]
+- **핵심 목적:** 나이아가라 파티클 시스템 에셋의 데이터와 템플릿 구성을 C++ 코드에서 참조하고 관리하기 위한 클래스입니다.
+- **파라미터 상세:**
+  - 컴포넌트 부착 및 스폰 함수 호출 시 이펙트 원본 템플릿 데이터로 전달됩니다.
+- **반환 값:** 없음 (데이터 에셋 클래스).
+- **기술적 팁 (Technical Tips):**
+  - **메모리 최적화 (Soft References):** 빌드 시 에셋이 메모리에 항상 상주하는 것을 방지하기 위해, 헤더에서는 `TSoftObjectPtr<UNiagaraSystem>`을 사용하여 소프트 레퍼런스로 선언하고, 필요한 시점에 비동기 로딩(Async Loading)하여 사용하는 것이 하이엔드 개발의 표준 권장사항입니다.
+- **코드 예시:**
+  ```cpp
+  // MyCharacter.h
+  #pragma once
+  #include "CoreMinimal.h"
+  #include "GameFramework/Character.h"
+  #include "NiagaraSystem.h" // 헤더 포함 필수
+  #include "MyCharacter.generated.h"
+
+  UCLASS()
+  class MYPROJECT_API AMyCharacter : public ACharacter
+  {
+      GENERATED_BODY()
+  public:
+      // 소프트 오브젝트 포인터로 나이아가라 시스템 선언
+      UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effects")
+      TSoftObjectPtr<UNiagaraSystem> ImpactEffectSoft;
+  };
+  ```
+
+### [UNiagaraComponent]
+- **핵심 목적:** 액터의 씬 컴포넌트(`USceneComponent`)로 등록되어 실제 월드 상에서 나이아가라 파티클 시스템을 렌더링하고, 이펙트의 재생 상태(`Activate`/`Deactivate`)를 제어하며 파라미터를 전송하는 컴포넌트입니다.
+- **파라미터 상세:**
+  - `bAutoDestroy` (`bool`): 파티클 시스템의 방출 및 수명이 완전히 종료(Finished)되었을 때, 해당 컴포넌트를 액터에서 자동으로 제거(`DestroyComponent`)하고 가비지 컬렉션 대상으로 넘길지 여부를 결정합니다.
+  - `bAutoActivate` (`bool`): 컴포넌트가 등록되자마자 즉시 파티클 시뮬레이션을 시작할지 여부를 결정합니다.
+- **반환 값:** 없음 (컴포넌트 클래스).
+- **기술적 팁 (Technical Tips):**
+  - **Auto Destroy 활성화:** 단발성 폭발이나 피격 이펙트의 경우, 런타임 메모리 누수를 방지하기 위해 반드시 `bAutoDestroy = true`로 설정하여 처리가 완료된 후 메모리에서 해제되도록 설계해야 합니다.
+  - **오클루전 쿼리 및 성능:** 화면에 보이지 않는 위치에 있는 파티클은 연산을 최소화할 수 있도록 나이아가라 시스템 내부의 고유 오클루전 모드 및 틱 최소화 플래그를 점검해야 합니다.
+- **코드 예시:**
+  ```cpp
+  // MyCharacter.cpp
+  #include "MyCharacter.h"
+  #include "NiagaraComponent.h"
+  #include "NiagaraFunctionLibrary.h"
+
+  void AMyCharacter::SpawnImpactEffect()
+  {
+      if (ImpactEffectSoft.IsNull()) return;
+
+      // 동기 로딩 예시 (실무에서는 비동기 로드 권장)
+      UNiagaraSystem* EffectSystem = ImpactEffectSoft.LoadSynchronous();
+      if (EffectSystem)
+      {
+          // 월드에 나이아가라 컴포넌트 동적 스폰
+          UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+              GetWorld(),
+              EffectSystem,
+              GetActorLocation(),
+              GetActorRotation(),
+              FVector(1.f),
+              true, // bAutoActivate
+              ENiagaraAttachmentRule::KeepRelativeTransform,
+              true // bAutoDestroy (자동 메모리 해제)
+          );
+      }
+  }
+  ```
+
+### [UNiagaraComponent::SetVariableFloat]
+- **핵심 목적:** 나이아가라 시스템 내부에 노출된 사용자 매개변수(User Parameter)의 실수(Float) 값을 런타임에 동적으로 변경하여 이펙트의 거동(예: 방출 속도, 크기, 수명 등)을 실시간으로 제어합니다.
+- **파라미터 상세:**
+  - `InVariableName` (`FName`): 변경하고자 하는 사용자 변수명입니다. 나이아가라 에디터에서 설정한 네임스페이스와 변수명이 일치해야 합니다.
+  - `InValue` (`float`): 변수에 대입할 변경값입니다.
+- **반환 값:** 없음 (`void`).
+- **기술적 팁 (Technical Tips):**
+  - **`User.` 네임스페이스 규칙:** C++에서 나이아가라 시스템 내부의 파라미터를 변경할 때는 에셋 내부의 변수명 앞에 반드시 **`User.` 접두사**를 포함해야 리플렉션이 올바르게 매핑됩니다. (예: 시스템 내부 변수명이 `SpawnRate`인 경우, C++ 코드에서는 `FName("User.SpawnRate")`으로 호출해야 합니다.)
+  - **Tick 성능 부하 경고:** 매 프레임 `SetVariable` 계열 함수를 호출하는 것은 내부 변수 캐시 미스를 유발할 수 있으므로, 상태 변화가 일어나는 특정 이벤트 시점에만 호출하도록 이벤트를 분리하는 것이 최적화 관점에서 바람직합니다.
+  - **유사 변수 대입 API:** 벡터 대입은 `SetVariableVec3`, 컬러 대입은 `SetVariableLinearColor`, 텍스처 대입은 `SetVariableTexture` 등의 형제 함수 API들을 동일한 네임스페이스 규칙으로 사용할 수 있습니다.
+- **코드 예시:**
+  ```cpp
+  void AMyCharacter::AdjustEffectIntensity(UNiagaraComponent* InNiagaraComp, float NewIntensity)
+  {
+      if (InNiagaraComp && InNiagaraComp->IsActive())
+      {
+          // User.Intensity 라는 나이아가라 변수에 신규 intensity 값 바인딩
+          InNiagaraComp->SetVariableFloat(TEXT("User.Intensity"), NewIntensity);
+      }
+  }
+  ```
