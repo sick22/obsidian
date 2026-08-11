@@ -767,3 +767,98 @@ graph TD
       }
   }
   ```
+
+---
+
+## 12. 언리얼 엔진 데미지 전달(ApplyDamage) 및 수령(TakeDamage) 시스템
+
+언리얼 엔진 5.7 게임플레이 프레임워크는 액터 간의 상호작용 중 가장 빈번하게 발생하는 전투 및 피해 전달 메커니즘을 구조화하기 위해 통합 데미지 시스템을 제공합니다. 이를 통해 공격자 측은 상대방의 인터페이스 구조를 자세히 알지 못하더라도 균일한 규격으로 타격을 인가할 수 있고, 피해자는 자신의 방어 조건에 맞춰 데미지를 다각도로 경감 수용할 수 있습니다.
+
+### [UGameplayStatics::ApplyDamage]
+- **핵심 목적:** 타깃 액터에게 원시 데미지 값을 인가하여 월드 상의 피해 연산 및 피격 이벤트 트리거를 일괄적으로 개시하는 정적(Static) 헬퍼 함수입니다.
+- **파라미터 상세:**
+  - `AActor* DamagedActor`: 피해를 수령할 대상 액터 객체의 포인터입니다.
+  - `float BaseDamage`: 가하려는 원시 공격 데미지 수치입니다.
+  - `AController* EventInstigator`: 해당 타격을 유발한 근원적인 공격 주체(플레이어 또는 AI)의 컨트롤러 포인터입니다. 킬 판정 및 점수 집계 트래킹에 활용됩니다.
+  - `AActor* DamageCauser`: 공격 행동을 유도한 물리적 본체 액터(예: 검, 발사된 탄환, 폭발하는 폭탄 등)의 포인터입니다.
+  - `TSubclassOf<UDamageType> DamageTypeClass`: 적용할 피해의 속성 클래스(`UDamageType` 상속 클래스) 형식 정보입니다. (물리, 화염, 빙결, 독성 등)
+- **반환 값:**
+  - `float`: 피격자의 방어 계수나 면역 법칙에 의해 최종 가감 연산되어 실제로 처리 반영된 순수 피해 감소 수치를 반환합니다.
+- **기술적 팁 (Technical Tips):**
+  - **서버 권한 전용 구동:** 데미지 계산 및 체력 삭감 등의 핵심 로직은 반드시 서버(`HasAuthority() == true`)의 감독 하에서만 동작해야 무단 치트(해킹)를 예방할 수 있으므로, 클라이언트 뷰포트에서 `ApplyDamage`를 직접 실행하는 오류가 없도록 설계해야 합니다.
+  - `#include "Kismet/GameplayStatics.h"` 헤더 추가가 필수입니다.
+- **코드 예시:**
+  ```cpp
+  #include "Kismet/GameplayStatics.h"
+  #include "GameFramework/DamageType.h"
+
+  void AWeapon::OnWeaponHit(AActor* HitActor)
+  {
+      if (!HasAuthority() || !HitActor) return;
+
+      AController* OwnerController = GetInstigatorController();
+      
+      // 대상에게 25.0f 만큼의 기본 무기 대미지 인가
+      float FinalDealtDamage = UGameplayStatics::ApplyDamage(
+          HitActor,
+          25.f,
+          OwnerController,
+          this,
+          UDamageType::StaticClass()
+      );
+  }
+  ```
+
+### [AActor::TakeDamage]
+- **핵심 목적:** 액터 클래스가 외부의 물리/논리적 데미지를 수령했을 때 실행되는 가상(Virtual) 인터페이스 함수로, 주입된 속성 정보를 토대로 실제 체력(HP) 게이지 차감 및 피격에 수반되는 상태 이상, 애니메이션 전이 등을 조율하는 종착지 영역입니다.
+- **파라미터 상세:**
+  - `float DamageAmount`: 가해진 원시 데미지 수치입니다.
+  - `const FDamageEvent& DamageEvent`: 데미지의 종류(포인트 데미지, 광역 데미지 등)와 상세 세부 피격 데이터를 캡슐화하고 있는 읽기 전용 구조체 참조입니다.
+  - `AController* EventInstigator`: 가해 동작을 유발한 근원 주체 컨트롤러입니다.
+  - `AActor* DamageCauser`: 타격을 물리적으로 실행한 원인 제공 액터입니다.
+- **반환 값:**
+  - `float`: 방어 계수, 가드 확률, 속성 저항 테이블 등을 내부적으로 대입 계산하여 피격자 본체의 실질 체력 상태에서 제하기로 결정한 최종 최종 데미지 값입니다.
+- **기술적 팁 (Technical Tips):**
+  - **Super 호출 누락 방지:** 본 함수를 C++ 서브 클래스에서 재정의(Override)할 때, 반드시 리턴 구간 또는 본문 초입에서 `Super::TakeDamage`를 경유 호출해야만 블루프린트 단의 피격 델리게이트 이벤트(`OnTakeAnyDamage` 등)가 정상적으로 전파·발동하여 오작동이 유발되지 않습니다.
+  - **체력(HP) 차감 및 사망 판정:** 최종 결정된 데미지를 내부 체력 변수에서 제한 후, 남은 수치가 `0.0f` 이하일 때 지체 없이 사망 로직(Ragdoll 전환, 충돌 물리 오프, 액터 생명 주기 해제 처리 등)을 호출하는 방식으로 구조화합니다.
+- **코드 예시:**
+  ```cpp
+  // MyEnemy.h
+  UCLASS()
+  class MYPROJECT_API AMyEnemy : public ACharacter
+  {
+      GENERATED_BODY()
+  public:
+      virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
+  protected:
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+      float Health = 100.f;
+
+      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+      float DefenseRating = 10.f; // 피해 감쇄용 방어 수치
+  };
+
+  // MyEnemy.cpp
+  float AMyEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
+  {
+      // 1. Super::TakeDamage를 호출하여 블루프린트 델리게이트 전파 보장
+      const float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+      
+      if (!HasAuthority() || Health <= 0.f) return 0.f;
+
+      // 2. 방어 능력치를 반영한 실질 피해량 경감 연산
+      float CalculatedDamage = FMath::Max(ActualDamage - DefenseRating, 0.f);
+
+      // 3. 체력 차감 적용
+      Health = FMath::Max(Health - CalculatedDamage, 0.f);
+
+      // 4. 사망 감지
+      if (Health <= 0.f)
+      {
+          // 사망 처리 구현 호출
+      }
+
+      return CalculatedDamage;
+  }
+  ```
