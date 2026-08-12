@@ -627,3 +627,68 @@ AMyActor::AMyActor()
       }
   }
   ```
+
+---
+
+## 16. 물리 오버랩 쿼리(Overlap Query) API
+
+언리얼 엔진 5.7의 물리 엔진(Chaos Physics) 환경에서, 특정 기하 영역에 포괄적으로 교차 및 겹침(Overlap)이 발생한 액터들과 컴포넌트들을 모두 수집하여 검출 목록을 리포트받고자 할 때 `UWorld::OverlapMultiByChannel` API를 사용합니다.
+
+### [UWorld::OverlapMultiByChannel]
+- **핵심 목적:** 지정한 월드 좌표상의 공간 범위 안에 위치한 입체 구역 내에서, 정의된 충돌 채널에 반응(Overlap 또는 Block)하는 모든 물리 객체(Actor/Component)를 검출하여 목록 배열로 획득하는 물리 쿼리 함수입니다.
+- **파라미터 상세:**
+  - `TArray<struct FOverlapResult>& OutOverlaps`: 충돌 조건에 매치되어 감지된 객체들의 상세 물리 정보가 추가 및 적재될 동적 배열 참조입니다.
+  - `const FVector& Pos`: 겹침 검사를 실질적으로 가동할 공간의 중심 3차원 위치 좌표 벡터입니다.
+  - `const FQuat& Rot`: 검사용 충돌체(Collision Shape)가 배치 시 유지해야 할 절대 회전(Quaternion) 궤적입니다.
+  - `ECollisionChannel TraceChannel`: 물리 검출 기준으로 삼을 대상 충돌 필터 채널입니다 (예: `ECC_WorldDynamic`, `ECC_Pawn` 등).
+  - `const FCollisionShape& CollisionShape`: 오버랩 영역으로 사용할 기하학적 형태 사양입니다. (`FCollisionShape::MakeSphere`, `FCollisionShape::MakeBox`, `FCollisionShape::MakeCapsule` 정적 함수를 이용해 설정)
+  - `const FCollisionQueryParams& Params`: (선택) 쿼리 수행 시 나 자신을 무시할지(`AddIgnoredActor`), 상세 충돌 폴리곤 메시를 판정 대상으로 삼을지(`bTraceComplex`) 등을 패키징한 옵션 구조체입니다.
+  - `const FCollisionResponseParams& ResponseParam`: (선택) 채널 반응을 오버라이딩하여 검출 규칙을 동적으로 세부 조율할 때 사용하는 응답 파라미터 구조체입니다.
+- **반환 값:**
+  - `bool`: 쿼리 영역 안에서 지정 조건 채널에 매칭되어 오버랩 감지된 물리 대상이 단 하나라도 존재하여 목록 배열에 등록되었다면 `true`, 겹치는 물체가 전혀 없는 진공 상태라면 `false`를 반환합니다.
+- **기술적 팁 (Technical Tips):**
+  - **감지 활성화 플래그 확인:** 검출 대상 액터의 타깃 컴포넌트가 가지고 있는 Collision Enabled 속성이 `QueryOnly` 또는 `QueryAndPhysics`로 활성화되어 있어야 하며, 동시에 해당 TraceChannel에 대해 **`Overlap`** 또는 **`Block`** 반응 설정이 인가되어 있어야만 감지 큐에 수집됩니다 (`Ignore`로 지정된 물체는 무시됨).
+  - **FOverlapResult 구조체 추출:** 수집된 결과 구조체에서 `GetActor()` 혹은 `GetComponent()`를 호출하여 충돌 물체 본체를 획득하게 되며, 안전한 사용을 위해 취득한 포인터의 널 검사(`IsValid()`)가 필수로 수반되어야 합니다.
+  - **성능 경고 (Overhead):** 매 틱 거대한 영역을 대상으로 오버랩 쿼리를 반복하는 구조는 심각한 물리 스레드 병목을 유발하므로, 폭발 직후 1회 또는 일정 간격(Timer)으로 쿼리 연산 빈도를 조율하는 디자인 패턴이 하이엔드 개발에 적합합니다.
+- **코드 예시:**
+  ```cpp
+  #include "Engine/World.h"
+  #include "Engine/OverlapResult.h" // FOverlapResult를 사용하기 위한 필수 헤더
+
+  void AMyCharacter::DetectEnemiesAround()
+  {
+      UWorld* World = GetWorld();
+      if (!World) return;
+
+      // 1. 구체 형태의 충돌 쿼리 규격 설정 (반지름 500cm)
+      FCollisionShape OverlapSphere = FCollisionShape::MakeSphere(500.f);
+
+      // 2. 검사 파라미터 구조체 설정 (자신은 검사에서 예외화)
+      FCollisionQueryParams QueryParams;
+      QueryParams.AddIgnoredActor(this);
+
+      TArray<FOverlapResult> OverlapResults;
+      
+      // 3. Pawn 채널 기준으로 주변의 겹치는 객체들 다중 룩업 실행
+      bool bHasOverlaps = World->OverlapMultiByChannel(
+          OverlapResults,
+          GetActorLocation(),
+          FQuat::Identity, // 회전 각도 없음
+          ECC_Pawn,
+          OverlapSphere,
+          QueryParams
+      );
+
+      if (bHasOverlaps)
+      {
+          for (const FOverlapResult& Result : OverlapResults)
+          {
+              AActor* OverlappedActor = Result.GetActor();
+              if (OverlappedActor)
+              {
+                  // 오버랩된 캐릭터들을 대상으로 비즈니스 로직(예: 디버프 인가 등) 처리
+              }
+          }
+      }
+  }
+  ```
