@@ -862,3 +862,82 @@ graph TD
       return CalculatedDamage;
   }
   ```
+
+---
+
+## 13. 타이머 관리 시스템(Timer Manager) 및 SetTimer API
+
+언리얼 엔진 5.7에서 특정 시간 지연 후 함수를 1회 실행(Delay)하거나, 정해진 시간 간격마다 반복적으로 특정 로직을 틱(Tick)과 독립적으로 수행하고자 할 때 타이머 시스템(`FTimerManager`)을 사용합니다. 이를 통해 오버헤드가 큰 틱 업데이트를 피하고 효율적인 이벤트 기반 설계를 구현할 수 있습니다.
+
+### [FTimerManager::SetTimer]
+- **핵심 목적:** 지정한 시간(초 단위)이 경과한 뒤 클래스의 특정 멤버 함수 또는 델리게이트/람다식을 호출하도록 스케줄링을 등록하는 타이머 구동 함수입니다.
+- **파라미터 상세:**
+  - `FTimerHandle& InOutHandle`: 구동할 타이머의 상태를 추적하고, 차후 수동 취소(`ClearTimer`) 또는 정지(Pause) 제어 시 식별자로 활용되는 제어용 핸들 레퍼런스입니다.
+  - `UserClass* InObj`: 타이머 만료 시 호출할 콜백 함수가 소속된 객체의 포인터(보통 `this`)입니다.
+  - `InTimerMethod` (`typename FTimerDelegate::TMethodPtr<UserClass>`): 타이머가 동작했을 때 트리거할 멤버 함수의 포인터 주소입니다 (예: `&AMyActor::MyCallback`).
+  - `float InRate`: 타이머가 작동하기까지 대기할 지연 시간 또는 반복 주기 시간(초 단위)입니다.
+  - `bool bLoop`: (선택) `true` 입력 시 `InRate` 간격으로 계속해서 반복 작동하며, `false`인 경우 최초 1회만 동작한 후 자동 해제됩니다.
+  - `float InFirstDelay`: (선택) 루프 타이머 등에서 최초로 실행될 때 적용할 추가 지연 대기 시간(초)입니다. 기본값인 `-1.f` 혹은 `0.f` 미만의 값이 인가되면 `InRate` 시간이 최초 대기 시간으로 자동 적용됩니다.
+- **반환 값:** 없음 (`void`).
+- **기술적 팁 (Technical Tips):**
+  - **안전한 생명 주기 관리:** 타이머가 가동 중인 액터가 파괴되거나 비활성화되는 시점에는 메모리 참조 오류를 방지하기 위해 반드시 `GetWorldTimerManager().ClearTimer(TimerHandle)`를 수행하여 작동 대기 중인 이벤트를 회수해야 합니다. 일반적으로 `EndPlay` 가상 함수에서 처리가 권장됩니다.
+  - **인자 바인딩 및 람다 활용:** 인자가 존재하는 멤버 함수나 로컬 변수를 캡처해야 할 경우, `FTimerDelegate` 구조체를 생성하고 `CreateUObject` 또는 `CreateLambda` 유틸리티를 바인딩하여 등록할 수 있는 대안 오버로드가 존재합니다.
+- **코드 예시:**
+  ```cpp
+  // MyActor.h
+  #pragma once
+  #include "CoreMinimal.h"
+  #include "GameFramework/Actor.h"
+  #include "MyActor.generated.h"
+
+  UCLASS()
+  class MYPROJECT_API AMyActor : public AActor
+  {
+      GENERATED_BODY()
+  public:
+      AMyActor();
+
+  protected:
+      virtual void BeginPlay() override;
+      virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+      // 1. 타이머의 구별을 위한 핸들 변수 선언
+      FTimerHandle SpawnTimerHandle;
+
+      // 2. 타이머 작동 시 트리거될 콜백 함수
+      void SpawnBonusItem();
+  };
+
+  // MyActor.cpp
+  #include "MyActor.h"
+  #include "TimerManager.h" // 타이머 매니저 헤더 필수
+
+  AMyActor::AMyActor() {}
+
+  void AMyActor::BeginPlay()
+  {
+      Super::BeginPlay();
+
+      // 3. 3초마다 SpawnBonusItem()을 무한 반복(bLoop = true)하도록 스케줄링 등록
+      GetWorldTimerManager().SetTimer(
+          SpawnTimerHandle,
+          this,
+          &AMyActor::SpawnBonusItem,
+          3.f,
+          true
+      );
+  }
+
+  void AMyActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
+  {
+      // 4. 액터 소멸 단계에서 활성 타이머 클리어 (널 크래시 방지용 필수 루틴)
+      GetWorldTimerManager().ClearTimer(SpawnTimerHandle);
+
+      Super::EndPlay(EndPlayReason);
+  }
+
+  void AMyActor::SpawnBonusItem()
+  {
+      // 주기적으로 구동할 아이템 스폰 연산 전개
+  }
+  ```
