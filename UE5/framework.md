@@ -941,3 +941,113 @@ graph TD
       // 주기적으로 구동할 아이템 스폰 연산 전개
   }
   ```
+
+
+## 14. AI 네비게이션 이동 제어 및 경로 추적 API
+
+### [AAIController::MoveTo]
+- **핵심 목적:** AI 컨트롤러가 월드 공간 내의 네비게이션 메시(NavMesh) 지형을 판독하여, 지정된 월드 좌표(`FVector`) 또는 추적 타깃 액터(`AActor*`)를 향해 자동으로 최적의 이동 경로(Pathfinding)를 산출해 동적 이족보행 이동을 수행하게 지시하는 명령 API입니다.
+- **파라미터 상세:**
+  - `MoveRequest` (`const FAIMoveRequest&`): 목표 타깃 액터/좌표 정보, 이동 도달 허용 오차 범위(Acceptance Radius), 경로 탐색 및 반응 옵션을 집약해 담은 요청 구조체입니다.
+  - `OutPath` (`FNavPathSharedPtr*`): (선택) 산출된 네비게이션 도중의 웨이포인트 경로 세부 정보를 획득해 저장할 공유 포인터 주소입니다.
+- **반환 값:**
+  - `FPathFollowingRequestResult`: 이동 요청의 즉각적인 접수 성공 여부와 스케줄링 관리 핸들ID를 담아 반환하는 상태 구조체입니다.
+- **기술적 팁 (Technical Tips):**
+  - **NavMeshBoundsVolume 필수:** 레벨 상에 네비게이션 볼륨이 적절히 배치되어 연산 빌드가 되어있지 않으면 경로 인식이 동작하지 않고 실패를 즉각 반환합니다.
+  - **래퍼 API 활용:** 구조체 생성 인수가 번거로울 경우 AIController 클래스가 자체 내장 래핑한 단축형 뷰 함수인 `MoveToLocation` 또는 `MoveToActor`를 바로 호출하여 코드를 단축할 수 있습니다.
+- **코드 예시:**
+  ```cpp
+  // AIController 클래스 내부 멤버 함수 구현부
+  void AMyAIController::MoveToTargetActor(AActor* TargetActor)
+  {
+      if (!TargetActor) return;
+
+      FAIMoveRequest MoveReq;
+      MoveReq.SetGoalActor(TargetActor);
+      MoveReq.SetAcceptanceRadius(50.f); // 50cm 내에 접근 시 도달 성공 처리
+      MoveReq.SetUsePathfinding(true);   // 네비게이션 메쉬 기반 길찾기 가동
+
+      FPathFollowingRequestResult Result = MoveTo(MoveReq);
+  }
+  ```
+
+---
+
+### [AAIController::GetPathFollowingComponent]
+- **핵심 목적:** AI 컨트롤러의 명령 하에 실시간 경로 이동 동작을 담당 추적하고 관리하는 핵심 컴포넌트인 `UPathFollowingComponent`의 주소 포인터를 반환하는 인라인 게터 함수입니다.
+- **파라미터 상세:** 없음 (`void`).
+- **반환 값:**
+  - `UPathFollowingComponent*`: 경로 제어 컴포넌트 인스턴스 주소를 반환합니다.
+- **기술적 팁 (Technical Tips):**
+  - AI 캐릭터가 현재 이동 중인지 쿼리(`GetStatus()`)하거나, 비즈니스 상태 변화에 의해 즉각적인 이동 취소 및 제동 명령(`AbortMove`)을 인가할 때 해당 컴포넌트 포인터 주소를 획득하여 집행하게 됩니다.
+- **코드 예시:**
+  ```cpp
+  UPathFollowingComponent* PathFollowComp = GetPathFollowingComponent();
+  if (PathFollowComp && PathFollowComp->GetStatus() == EPathFollowingStatus::Moving)
+  {
+      // 현재 진행 중인 이동 경로를 취소하고 급제동
+      PathFollowComp->AbortMove(*this, FPathFollowingResultFlags::OwnerFinished);
+  }
+  ```
+
+---
+
+### [FPathFollowingResult]
+- **핵심 목적:** 네비게이션 경로 이동이 도달 완수(`Success`)되거나 물리 장벽에 블로킹(`Blocked`), 또는 로직 취소(`Aborted`)되어 종결되었을 때의 결과 코드와 상태 메타 데이터를 지니고 콜백 이벤트로 전달되는 피드백 구조체입니다.
+- **주요 멤버 변수 상세:**
+  - `Code` (`EPathFollowingResult::Type`): 이동의 최종 성패를 나타내는 결과 상수 코드입니다. (`Success`, `Blocked`, `Aborted`, `Invalid`)
+  - `Flags` (`uint8`): 특이 이동 상태 플래그들의 비트 마스크 값입니다.
+- **기술적 팁 (Technical Tips):**
+  - AI 컨트롤러의 경로 이동 완료 델리게이트 이벤트인 `ReceiveMoveCompleted` 가상 함수 재정의 시그니처나, `UPathFollowingComponent::OnRequestFinished` 멀티캐스트 델리게이트 구독 시 매개변수 타입(`const FPathFollowingResult&`)으로 대조 사용됩니다.
+- **코드 예시:**
+  ```cpp
+  // AIController.h 내 가상 함수 오버라이드
+  virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result) override;
+
+  // AIController.cpp 내 판정 분기 구현
+  void AMyAIController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
+  {
+      Super::OnMoveCompleted(RequestID, Result);
+
+      // 성공적으로 목적지 도달 완료 시 처리 분기
+      if (Result.IsSuccess())
+      {
+          // 타깃 공격 개시 또는 순찰 몽타주 재생
+      }
+      else if (Result.IsBlocked())
+      {
+          // 장애물로 인해 갈 수 없는 상태이므로 경로 재생성 및 우회 패턴 가동
+      }
+  }
+  ```
+
+---
+
+### [AI 최적화에서의 SetTimer 적용 패턴]
+- AI 캐릭터가 무작위 대상을 추적할 때 매 틱마다 프레임 단위로 경로 탐색을 쿼리하여 `MoveTo`를 호출하는 방식은 네비게이션 연산 스레드에 엄청난 연산 오버헤드를 유발하여 서버 프레임을 드롭시킵니다.
+- 따라서 `SetTimer` 시스템을 통해 약 `0.25초 ~ 0.5초` 간격의 일정한 타이머 루프 주기로 추적 타깃 액터의 최종 위치를 쿼리하여 `MoveTo` 경로를 동기화 및 갱신해 주는 패턴이 최적화 표준 설계로 권장됩니다.
+- **코드 예시:**
+  ```cpp
+  void AMyAIController::BeginPlay()
+  {
+      Super::BeginPlay();
+
+      // 0.3초 주기마다 TargetActor의 실시간 위치를 갱신 추적하는 타이머 루프 가동
+      GetWorldTimerManager().SetTimer(
+          TargetTrackingTimerHandle,
+          this,
+          &AMyAIController::UpdateTargetTrackingMove,
+          0.3f,
+          true
+      );
+  }
+
+  void AMyAIController::UpdateTargetTrackingMove()
+  {
+      if (TargetActor)
+      {
+          // 0.3초 간격으로 스케줄링 길찾기 연산 갱신 요청
+          MoveToActor(TargetActor, 50.f);
+      }
+  }
+  ```
